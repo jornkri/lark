@@ -22,14 +22,6 @@ async function findExistingService(username, token) {
   return data.results?.[0] ?? null;
 }
 
-async function deleteServiceItem(itemId, username, token) {
-  const body = new URLSearchParams({ f: "json", token });
-  await fetch(
-    `${PORTAL_URL}/sharing/rest/content/users/${username}/items/${itemId}/delete`,
-    { method: "POST", body }
-  );
-}
-
 async function createFeatureService(username, token) {
   const createParameters = {
     name: SERVICE_NAME,
@@ -70,16 +62,27 @@ function stripLayerMeta({ id: _id, drawingInfo: _di, allowGeometryUpdates: _ag, 
   return rest;
 }
 
-// Legger til ett lag om gangen – unngår domenekonflikter i batch
-async function addLayersToService(serviceUrl, token, onStatus) {
+async function getExistingLayerCount(serviceUrl, token) {
+  const params = new URLSearchParams({ f: "json", token });
+  const res = await fetch(`${serviceUrl}?${params}`);
+  const data = await res.json();
+  return data.layers?.length ?? 0;
+}
+
+// Legger til lag fra og med `startIndex` – kan gjenoppta etter delvis feil
+async function addLayersToService(serviceUrl, token, onStatus, startIndex = 0) {
   const adminUrl = toAdminUrl(serviceUrl);
+  const remaining = LAYER_DEFINITIONS.slice(startIndex);
 
-  for (const layerDef of LAYER_DEFINITIONS) {
+  for (const layerDef of remaining) {
     const layer = stripLayerMeta(layerDef);
-    onStatus?.(`Oppretter lag: ${layer.name}…`);
+    onStatus?.(`Oppretter lag ${layerDef.id + 1}/${LAYER_DEFINITIONS.length}: ${layer.name}…`);
 
-    const payload = JSON.stringify({ layers: [layer] });
-    const body = new URLSearchParams({ addToDefinition: payload, f: "json", token });
+    const body = new URLSearchParams({
+      addToDefinition: JSON.stringify({ layers: [layer] }),
+      f: "json",
+      token,
+    });
 
     const res = await fetch(`${adminUrl}/addToDefinition`, { method: "POST", body });
     const text = await res.text();
@@ -87,7 +90,7 @@ async function addLayersToService(serviceUrl, token, onStatus) {
 
     let data;
     try { data = JSON.parse(text); }
-    catch { throw new Error(`Ugyldig svar fra AGOL: ${text.slice(0, 300)}`); }
+    catch { throw new Error(`Ugyldig svar: ${text.slice(0, 300)}`); }
 
     if (data.error) {
       const details = Array.isArray(data.error.details)
@@ -99,13 +102,6 @@ async function addLayersToService(serviceUrl, token, onStatus) {
   }
 }
 
-async function serviceHasLayers(serviceUrl, token) {
-  const params = new URLSearchParams({ f: "json", token });
-  const res = await fetch(`${serviceUrl}?${params}`);
-  const data = await res.json();
-  return (data.layers?.length ?? 0) > 0;
-}
-
 export async function ensureLarkService(onStatus) {
   const cached = localStorage.getItem(STORAGE_KEY);
   if (cached) return cached;
@@ -115,25 +111,30 @@ export async function ensureLarkService(onStatus) {
   onStatus?.("Søker etter eksisterende LARK-tjeneste…");
   const existing = await findExistingService(username, token);
 
+  let serviceUrl;
+
   if (existing?.url) {
-    const hasLayers = await serviceHasLayers(existing.url, token);
-    if (hasLayers) {
-      localStorage.setItem(STORAGE_KEY, existing.url);
-      return existing.url;
+    serviceUrl = existing.url;
+    const existingCount = await getExistingLayerCount(serviceUrl, token);
+
+    if (existingCount >= LAYER_DEFINITIONS.length) {
+      // Alle lag finnes – tjenesten er klar
+      localStorage.setItem(STORAGE_KEY, serviceUrl);
+      return serviceUrl;
     }
-    // Tom tjeneste fra mislykket forsøk – slett og start på nytt
-    onStatus?.("Sletter ufullstendig tjeneste…");
-    await deleteServiceItem(existing.id, username, token);
+
+    // Delvis provisjonert – fortsett fra der det stoppet
+    onStatus?.(`Fortsetter lagoppretting (${existingCount}/${LAYER_DEFINITIONS.length} ferdig)…`);
+    await addLayersToService(serviceUrl, token, onStatus, existingCount);
+  } else {
+    onStatus?.("Oppretter Feature Service i ArcGIS Online…");
+    const created = await createFeatureService(username, token);
+    serviceUrl = created.serviceurl ?? created.encodedServiceURL;
+
+    // Vent til tjenesten er tilgjengelig
+    await new Promise((r) => setTimeout(r, 2000));
+    await addLayersToService(serviceUrl, token, onStatus, 0);
   }
-
-  onStatus?.("Oppretter Feature Service i ArcGIS Online…");
-  const created = await createFeatureService(username, token);
-  const serviceUrl = created.serviceurl ?? created.encodedServiceURL;
-
-  // Vent til tjenesten er klar
-  await new Promise((r) => setTimeout(r, 2000));
-
-  await addLayersToService(serviceUrl, token, onStatus);
 
   localStorage.setItem(STORAGE_KEY, serviceUrl);
   return serviceUrl;
