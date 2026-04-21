@@ -57,14 +57,20 @@ function buildLayerPayload(def) {
 
 // ── Hjelpefunksjoner ─────────────────────────────────────────────────────────
 
+async function agolGet(url, params) {
+  const qs = new URLSearchParams(params);
+  const res = await fetch(`${url}?${qs}`);
+  const text = await res.text();
+  try { return JSON.parse(text); }
+  catch { throw new Error(`Ugyldig GET-svar fra ${url}: ${text.slice(0, 200)}`); }
+}
+
 async function agolPost(url, params) {
   const body = new URLSearchParams(params);
   const res = await fetch(url, { method: "POST", body });
   const text = await res.text();
-  let data;
-  try { data = JSON.parse(text); }
-  catch { throw new Error(`Ugyldig svar (HTML?) fra ${url}: ${text.slice(0, 200)}`); }
-  return data;
+  try { return JSON.parse(text); }
+  catch { throw new Error(`Ugyldig POST-svar fra ${url}: ${text.slice(0, 200)}`); }
 }
 
 function toAdminUrl(serviceUrl) {
@@ -74,11 +80,13 @@ function toAdminUrl(serviceUrl) {
 // ── Finn eksisterende tjeneste ───────────────────────────────────────────────
 
 async function findExistingService(username, token) {
+  // /content/users kun GET – token i query-string
   let start = 1;
   while (true) {
-    const data = await agolPost(`${PORTAL_URL}/sharing/rest/content/users/${username}`, {
-      f: "json", token, num: "100", start: String(start),
-    });
+    const data = await agolGet(
+      `${PORTAL_URL}/sharing/rest/content/users/${username}`,
+      { f: "json", token, num: "100", start: String(start) }
+    );
     const item = (data.items ?? []).find(
       (i) => i.title === SERVICE_NAME && i.type === "Feature Service"
     );
@@ -86,7 +94,17 @@ async function findExistingService(username, token) {
     if (data.nextStart === -1 || (data.items ?? []).length < 100) break;
     start = data.nextStart;
   }
-  return null;
+
+  // Fallback: search API (fanger opp elementer i undermapper)
+  const search = await agolGet(`${PORTAL_URL}/sharing/rest/search`, {
+    q: `owner:${username} AND type:"Feature Service"`,
+    num: "100",
+    f: "json",
+    token,
+  });
+  return (search.results ?? []).find(
+    (i) => i.title === SERVICE_NAME
+  ) ?? null;
 }
 
 // ── Opprett Feature Service ──────────────────────────────────────────────────
@@ -119,7 +137,7 @@ async function createFeatureService(username, token) {
 // ── Antall lag i tjeneste ────────────────────────────────────────────────────
 
 async function getExistingLayerCount(serviceUrl, token) {
-  const data = await agolPost(serviceUrl, { f: "json", token });
+  const data = await agolGet(serviceUrl, { f: "json", token });
   return data.layers?.length ?? 0;
 }
 
