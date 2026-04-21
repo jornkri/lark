@@ -214,17 +214,15 @@ export const LAYER_DEFINITIONS = [
   // ── 0: Grøntareal (polygon) ───────────────────────────────────────────────
   {
     id: 0,
-    name: "Grøntareal",
-    type: "Feature Layer",
-    geometryType: "esriGeometryPolygon",
+    name: "Grontareal",
+geometryType: "esriGeometryPolygon",
     description: "Planlagte og eksisterende grøntarealer (NS 3420 / SOSI Park)",
     hasZ: false,
     hasM: false,
     allowGeometryUpdates: true,
-    capabilities: "Query,Editing,Create,Update,Delete",
-    fields: [
+fields: [
       { name: "GrontarealType", type: "esriFieldTypeString", alias: "Grøntarealtype",      length: 10,  nullable: true, editable: true, domain: D_GRØNTAREAL_TYPE },
-      { name: "Areal_m2",       type: "esriFieldTypeDouble", alias: "Areal (m²)",          nullable: true, editable: false },
+      { name: "Areal_m2",       type: "esriFieldTypeDouble", alias: "Areal (m2)",          nullable: true, editable: true },
       F_FORVALTNING, F_STATUS, F_NAVN, F_PROSJEKT, F_REFERANSE, F_BESKRIVELSE,
     ],
     drawingInfo: {
@@ -244,14 +242,12 @@ export const LAYER_DEFINITIONS = [
   {
     id: 1,
     name: "Vegetasjon_flate",
-    type: "Feature Layer",
-    geometryType: "esriGeometryPolygon",
+geometryType: "esriGeometryPolygon",
     description: "Vegetasjonsflater og beplantningsområder",
     hasZ: false,
     hasM: false,
     allowGeometryUpdates: true,
-    capabilities: "Query,Editing,Create,Update,Delete",
-    fields: [
+fields: [
       { name: "VegetasjonType",   type: "esriFieldTypeString", alias: "Vegetasjonstype",     length: 10,  nullable: true, editable: true, domain: D_VEGETASJON_TYPE },
       { name: "PlanteArt",        type: "esriFieldTypeString", alias: "Planteart (botanisk)", length: 200, nullable: true, editable: true },
       { name: "PlanteArtNorsk",   type: "esriFieldTypeString", alias: "Planteart (norsk)",    length: 200, nullable: true, editable: true },
@@ -275,14 +271,12 @@ export const LAYER_DEFINITIONS = [
   {
     id: 2,
     name: "Tre",
-    type: "Feature Layer",
-    geometryType: "esriGeometryPoint",
+geometryType: "esriGeometryPoint",
     description: "Enkelttrær",
     hasZ: false,
     hasM: false,
     allowGeometryUpdates: true,
-    capabilities: "Query,Editing,Create,Update,Delete",
-    fields: [
+fields: [
       { name: "TreArt",            type: "esriFieldTypeString",  alias: "Treslag (botanisk)",  length: 200, nullable: true, editable: true },
       { name: "TreArtNorsk",       type: "esriFieldTypeString",  alias: "Treslag (norsk)",     length: 200, nullable: true, editable: true },
       { name: "Stammediameter_cm", type: "esriFieldTypeInteger", alias: "Stammediameter (cm)", nullable: true, editable: true },
@@ -310,14 +304,12 @@ export const LAYER_DEFINITIONS = [
   {
     id: 3,
     name: "Sti_vei",
-    type: "Feature Layer",
-    geometryType: "esriGeometryPolyline",
+geometryType: "esriGeometryPolyline",
     description: "Stier, veier og gangforbindelser",
     hasZ: false,
     hasM: false,
     allowGeometryUpdates: true,
-    capabilities: "Query,Editing,Create,Update,Delete",
-    fields: [
+fields: [
       { name: "StiType",   type: "esriFieldTypeString", alias: "Stitype",     length: 10,  nullable: true, editable: true, domain: D_STI_TYPE },
       { name: "Bredde_m",  type: "esriFieldTypeDouble", alias: "Bredde (m)",  nullable: true, editable: true },
       { name: "Dekke",     type: "esriFieldTypeString", alias: "Dekke",       length: 10,  nullable: true, editable: true, domain: D_DEKKE },
@@ -336,17 +328,15 @@ export const LAYER_DEFINITIONS = [
   {
     id: 4,
     name: "Hard_flate",
-    type: "Feature Layer",
-    geometryType: "esriGeometryPolygon",
+geometryType: "esriGeometryPolygon",
     description: "Harde flater, plasser og belegning",
     hasZ: false,
     hasM: false,
     allowGeometryUpdates: true,
-    capabilities: "Query,Editing,Create,Update,Delete",
-    fields: [
+fields: [
       { name: "HardFlateType", type: "esriFieldTypeString", alias: "Type hard flate", length: 10, nullable: true, editable: true, domain: D_HARD_FLATE_TYPE },
       { name: "Belegg",        type: "esriFieldTypeString", alias: "Belegg/dekke",    length: 10, nullable: true, editable: true, domain: D_DEKKE },
-      { name: "Areal_m2",      type: "esriFieldTypeDouble", alias: "Areal (m²)",      nullable: true, editable: false },
+      { name: "Areal_m2",      type: "esriFieldTypeDouble", alias: "Areal (m2)",      nullable: true, editable: false },
       F_STATUS, F_FORVALTNING, F_NAVN, F_PROSJEKT, F_REFERANSE, F_BESKRIVELSE,
     ],
     drawingInfo: {
@@ -366,17 +356,15 @@ export const LAYER_DEFINITIONS = [
   {
     id: 5,
     name: "Vannflate",
-    type: "Feature Layer",
-    geometryType: "esriGeometryPolygon",
+geometryType: "esriGeometryPolygon",
     description: "Vann, bekker, dammer og vannspeil",
     hasZ: false,
     hasM: false,
     allowGeometryUpdates: true,
-    capabilities: "Query,Editing,Create,Update,Delete",
-    fields: [
+fields: [
       { name: "VannType", type: "esriFieldTypeString", alias: "Vanntype",    length: 10, nullable: true, editable: true, domain: D_VANN_TYPE },
       { name: "Dybde_m",  type: "esriFieldTypeDouble", alias: "Dybde (m)",   nullable: true, editable: true },
-      { name: "Areal_m2", type: "esriFieldTypeDouble", alias: "Areal (m²)",  nullable: true, editable: false },
+      { name: "Areal_m2", type: "esriFieldTypeDouble", alias: "Areal (m2)",  nullable: true, editable: false },
       F_STATUS, F_NAVN, F_PROSJEKT, F_REFERANSE, F_BESKRIVELSE,
     ],
     drawingInfo: {
@@ -396,18 +384,16 @@ export const LAYER_DEFINITIONS = [
   {
     id: 6,
     name: "Moblering",
-    type: "Feature Layer",
-    geometryType: "esriGeometryPoint",
+geometryType: "esriGeometryPoint",
     description: "Møblering, utstyr og elementer",
     hasZ: false,
     hasM: false,
     allowGeometryUpdates: true,
-    capabilities: "Query,Editing,Create,Update,Delete",
-    fields: [
+fields: [
       { name: "MobleringType", type: "esriFieldTypeString",  alias: "Type møblering",   length: 10,  nullable: true, editable: true, domain: D_MØBLERING_TYPE },
       { name: "Material",      type: "esriFieldTypeString",  alias: "Material",         length: 10,  nullable: true, editable: true, domain: D_MATERIAL },
       { name: "Produsent",     type: "esriFieldTypeString",  alias: "Produsent/modell", length: 200, nullable: true, editable: true },
-      { name: "Antall",        type: "esriFieldTypeInteger", alias: "Antall",           nullable: true, editable: true, defaultValue: 1 },
+      { name: "Antall",        type: "esriFieldTypeInteger", alias: "Antall",           nullable: true, editable: true },
       F_STATUS, F_NAVN, F_PROSJEKT, F_REFERANSE, F_BESKRIVELSE,
     ],
     drawingInfo: {
@@ -428,17 +414,15 @@ export const LAYER_DEFINITIONS = [
   {
     id: 7,
     name: "Konstruksjon",
-    type: "Feature Layer",
-    geometryType: "esriGeometryPolygon",
+geometryType: "esriGeometryPolygon",
     description: "Konstruksjoner, bygg og anleggselementer",
     hasZ: false,
     hasM: false,
     allowGeometryUpdates: true,
-    capabilities: "Query,Editing,Create,Update,Delete",
-    fields: [
+fields: [
       { name: "KonstruksjonsType", type: "esriFieldTypeString", alias: "Konstruksjonstype", length: 10,  nullable: true, editable: true, domain: D_KONSTRUKSJON_TYPE },
       { name: "Material",          type: "esriFieldTypeString", alias: "Material",          length: 10,  nullable: true, editable: true, domain: D_MATERIAL },
-      { name: "Areal_m2",          type: "esriFieldTypeDouble", alias: "Areal (m²)",        nullable: true, editable: false },
+      { name: "Areal_m2",          type: "esriFieldTypeDouble", alias: "Areal (m2)",        nullable: true, editable: false },
       F_STATUS, F_FORVALTNING, F_NAVN, F_PROSJEKT, F_REFERANSE, F_BESKRIVELSE,
     ],
     drawingInfo: {
