@@ -10,16 +10,33 @@ async function getCredentials() {
 }
 
 async function findExistingService(username, token) {
-  const params = new URLSearchParams({
+  // Content API is more reliable than search (no indexing delay)
+  let start = 1;
+  while (true) {
+    const params = new URLSearchParams({ f: "json", token, num: "100", start: String(start) });
+    const res = await fetch(`${PORTAL_URL}/sharing/rest/content/users/${username}?${params}`);
+    const data = await res.json();
+    if (!data.error) {
+      const item = (data.items ?? []).find(
+        (i) => i.title === SERVICE_NAME && i.type === "Feature Service"
+      );
+      if (item) return item;
+      if (data.nextStart === -1 || (data.items ?? []).length < 100) break;
+      start = data.nextStart;
+    } else {
+      break;
+    }
+  }
+  // Fallback: search API (may lag behind)
+  const searchParams = new URLSearchParams({
     q: `title:"${SERVICE_NAME}" AND owner:${username} AND type:"Feature Service"`,
     num: "1",
     f: "json",
     token,
   });
-  const res = await fetch(`${PORTAL_URL}/sharing/rest/search?${params}`);
-  const data = await res.json();
-  if (data.error) throw new Error(`Søk feilet: ${JSON.stringify(data.error)}`);
-  return data.results?.[0] ?? null;
+  const searchRes = await fetch(`${PORTAL_URL}/sharing/rest/search?${searchParams}`);
+  const searchData = await searchRes.json();
+  return searchData.results?.[0] ?? null;
 }
 
 async function createFeatureService(username, token) {
@@ -128,7 +145,33 @@ export async function ensureLarkService(onStatus) {
     await addLayersToService(serviceUrl, token, onStatus, existingCount);
   } else {
     onStatus?.("Oppretter Feature Service i ArcGIS Online…");
-    const created = await createFeatureService(username, token);
+    let created;
+    try {
+      created = await createFeatureService(username, token);
+    } catch (e) {
+      if (e.message?.includes("already exists")) {
+        // Tjenesten finnes men dukket ikke opp i innholdssøket (f.eks. indeksforsinkelse).
+        // Vent litt og prøv å finne den igjen.
+        onStatus?.("Tjeneste finnes allerede – søker på nytt…");
+        await new Promise((r) => setTimeout(r, 3000));
+        const retry = await findExistingService(username, token);
+        if (!retry?.url) {
+          throw new Error(
+            `Tjenesten «${SERVICE_NAME}» eksisterer allerede i din ArcGIS Online-konto, ` +
+            `men kan ikke hentes automatisk. Gå til arcgis.com/home/content.html og slett ` +
+            `elementet «${SERVICE_NAME}», og last deretter siden på nytt.`
+          );
+        }
+        serviceUrl = retry.url;
+        const existingCount = await getExistingLayerCount(serviceUrl, token);
+        if (existingCount < LAYER_DEFINITIONS.length) {
+          await addLayersToService(serviceUrl, token, onStatus, existingCount);
+        }
+        localStorage.setItem(STORAGE_KEY, serviceUrl);
+        return serviceUrl;
+      }
+      throw e;
+    }
     serviceUrl = created.serviceurl ?? created.encodedServiceURL;
 
     // Vent til tjenesten er tilgjengelig
