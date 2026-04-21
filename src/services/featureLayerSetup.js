@@ -80,31 +80,50 @@ function toAdminUrl(serviceUrl) {
 // ── Finn eksisterende tjeneste ───────────────────────────────────────────────
 
 async function findExistingService(username, token) {
-  // /content/users kun GET – token i query-string
+  // ── 1. Content API (root-mappe) ──────────────────────────────────────────
   let start = 1;
   while (true) {
     const data = await agolGet(
       `${PORTAL_URL}/sharing/rest/content/users/${username}`,
       { f: "json", token, num: "100", start: String(start) }
     );
+    console.log("[LARK] content/users page", start, "→ items:", (data.items ?? []).map(i => `${i.title} (${i.type})`));
     const item = (data.items ?? []).find(
       (i) => i.title === SERVICE_NAME && i.type === "Feature Service"
     );
-    if (item) return item;
+    if (item) { console.log("[LARK] Fant tjeneste via content API:", item); return item; }
     if (data.nextStart === -1 || (data.items ?? []).length < 100) break;
     start = data.nextStart;
   }
 
-  // Fallback: search API (fanger opp elementer i undermapper)
+  // ── 2. Search API (fanger opp elementer i undermapper) ───────────────────
   const search = await agolGet(`${PORTAL_URL}/sharing/rest/search`, {
     q: `owner:${username} AND type:"Feature Service"`,
     num: "100",
     f: "json",
     token,
   });
-  return (search.results ?? []).find(
-    (i) => i.title === SERVICE_NAME
-  ) ?? null;
+  console.log("[LARK] search API →", (search.results ?? []).map(i => `${i.title} (${i.url})`));
+  const found = (search.results ?? []).find((i) => i.title === SERVICE_NAME);
+  if (found) { console.log("[LARK] Fant tjeneste via search:", found); return found; }
+
+  // ── 3. Hent orgId fra portal og prøv kjente services-servere ────────────
+  const portal = await agolGet(`${PORTAL_URL}/sharing/rest/portals/self`, { f: "json", token });
+  const orgId = portal.id;
+  console.log("[LARK] orgId:", orgId);
+  if (orgId) {
+    for (let n = 1; n <= 9; n++) {
+      const url = `https://services${n}.arcgis.com/${orgId}/arcgis/rest/services/${SERVICE_NAME}/FeatureServer`;
+      const info = await agolGet(url, { f: "json", token }).catch(() => null);
+      if (info && !info.error) {
+        console.log("[LARK] Fant tjeneste ved konstruert URL:", url);
+        return { title: SERVICE_NAME, type: "Feature Service", url, id: null };
+      }
+    }
+  }
+
+  console.warn("[LARK] Fant ingen eksisterende tjeneste.");
+  return null;
 }
 
 // ── Opprett Feature Service ──────────────────────────────────────────────────
