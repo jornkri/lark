@@ -1,182 +1,197 @@
-import IdentityManager from "@arcgis/core/identity/IdentityManager.js";
+import esriRequest from "@arcgis/core/request.js";
+import Portal from "@arcgis/core/portal/Portal.js";
 import { SERVICE_NAME, LAYER_DEFINITIONS } from "../config/dataModel.js";
 
 const PORTAL_URL = "https://www.arcgis.com";
 const STORAGE_KEY = "lark_service_url";
 
-async function getCredentials() {
-  const cred = await IdentityManager.getCredential(`${PORTAL_URL}/sharing`);
-  return { token: cred.token, username: cred.userId };
+// ── Hjelpefunksjoner ─────────────────────────────────────────────────────────
+
+const SQL_TYPE = {
+  esriFieldTypeString:       "sqlTypeNVarchar",
+  esriFieldTypeDouble:       "sqlTypeFloat",
+  esriFieldTypeInteger:      "sqlTypeInteger",
+  esriFieldTypeSmallInteger: "sqlTypeSmallInt",
+  esriFieldTypeDate:         "sqlTypeOther",
+  esriFieldTypeOID:          "sqlTypeOther",
+  esriFieldTypeGlobalID:     "sqlTypeOther",
+};
+
+// Normaliser hvert felt til det formatet AGOL forventer i addToDefinition
+function normalizeField(field) {
+  return {
+    name:         field.name,
+    type:         field.type,
+    alias:        field.alias,
+    sqlType:      SQL_TYPE[field.type] ?? "sqlTypeOther",
+    length:       field.length ?? undefined,
+    nullable:     field.nullable ?? true,
+    editable:     field.editable ?? true,
+    domain:       field.domain ?? null,
+    defaultValue: null,
+  };
 }
 
-async function findExistingService(username, token) {
-  // Content API is more reliable than search (no indexing delay)
+// Bygg komplett lag-objekt som AGOL forventer
+function buildLayerPayload(layerDef) {
+  return {
+    id:                   layerDef.id,
+    name:                 layerDef.name,
+    type:                 "Feature Layer",
+    geometryType:         layerDef.geometryType,
+    description:          layerDef.description ?? "",
+    hasZ:                 false,
+    hasM:                 false,
+    allowGeometryUpdates: true,
+    drawingInfo:          layerDef.drawingInfo ?? null,
+    fields:               (layerDef.fields ?? []).map(normalizeField),
+  };
+}
+
+// ── Portal/brukerinfo ────────────────────────────────────────────────────────
+
+async function getPortalInfo() {
+  const portal = new Portal({ url: PORTAL_URL });
+  await portal.load();
+  return { portal, username: portal.user.username };
+}
+
+// ── Finn eksisterende tjeneste ───────────────────────────────────────────────
+
+async function findExistingService(username) {
+  // Bruk content-API (ingen søkeindeks-forsinkelse), med paginering
   let start = 1;
   while (true) {
-    const params = new URLSearchParams({ f: "json", token, num: "100", start: String(start) });
-    const res = await fetch(`${PORTAL_URL}/sharing/rest/content/users/${username}?${params}`);
-    const data = await res.json();
-    if (!data.error) {
-      const item = (data.items ?? []).find(
-        (i) => i.title === SERVICE_NAME && i.type === "Feature Service"
-      );
-      if (item) return item;
-      if (data.nextStart === -1 || (data.items ?? []).length < 100) break;
-      start = data.nextStart;
-    } else {
-      break;
-    }
+    const data = await esriRequest(
+      `${PORTAL_URL}/sharing/rest/content/users/${username}`,
+      { query: { f: "json", num: 100, start } }
+    ).then((r) => r.data);
+
+    const item = (data.items ?? []).find(
+      (i) => i.title === SERVICE_NAME && i.type === "Feature Service"
+    );
+    if (item) return item;
+    if (data.nextStart === -1 || (data.items ?? []).length < 100) break;
+    start = data.nextStart;
   }
-  // Fallback: search API (may lag behind)
-  const searchParams = new URLSearchParams({
-    q: `title:"${SERVICE_NAME}" AND owner:${username} AND type:"Feature Service"`,
-    num: "1",
-    f: "json",
-    token,
-  });
-  const searchRes = await fetch(`${PORTAL_URL}/sharing/rest/search?${searchParams}`);
-  const searchData = await searchRes.json();
-  return searchData.results?.[0] ?? null;
+  return null;
 }
 
-async function createFeatureService(username, token) {
+// ── Opprett Feature Service ──────────────────────────────────────────────────
+
+async function createFeatureService(username) {
   const createParameters = {
-    name: SERVICE_NAME,
-    serviceDescription: "Landskapsplan opprettet med LARK",
-    hasStaticData: false,
-    maxRecordCount: 10000,
+    name:                 SERVICE_NAME,
+    serviceDescription:   "Landskapsplan opprettet med LARK",
+    hasStaticData:        false,
+    maxRecordCount:       10000,
     supportedQueryFormats: "JSON",
-    capabilities: "Query,Editing,Create,Update,Delete,Sync",
+    capabilities:         "Query,Editing,Create,Update,Delete,Sync",
     allowGeometryUpdates: true,
-    units: "esriMeters",
+    units:                "esriMeters",
     xssPreventionInfo: {
       xssPreventionEnabled: true,
-      xssPreventionRule: "InputOutput",
-      xssInputRule: "rejectInvalid",
+      xssPreventionRule:    "InputOutput",
+      xssInputRule:         "rejectInvalid",
     },
   };
-  const body = new URLSearchParams({
-    createParameters: JSON.stringify(createParameters),
-    outputType: "featureService",
-    f: "json",
-    token,
-  });
-  const res = await fetch(
+
+  const data = await esriRequest(
     `${PORTAL_URL}/sharing/rest/content/users/${username}/createService`,
-    { method: "POST", body }
-  );
-  const data = await res.json();
-  if (!data.success) throw new Error(`Opprettelse feilet: ${JSON.stringify(data.error)}`);
+    {
+      method: "post",
+      body: {
+        createParameters: JSON.stringify(createParameters),
+        outputType:       "featureService",
+        f:                "json",
+      },
+    }
+  ).then((r) => r.data);
+
+  if (!data.success) {
+    throw new Error(`Opprettelse feilet: ${JSON.stringify(data.error ?? data)}`);
+  }
   return data;
 }
 
-// Schema-operasjoner krever /rest/admin/services/ (ikke /rest/services/)
+// ── Admin-URL for skjema-operasjoner ─────────────────────────────────────────
+
 function toAdminUrl(serviceUrl) {
   return serviceUrl.replace("/rest/services/", "/rest/admin/services/");
 }
 
-function stripLayerMeta({ id: _id, drawingInfo: _di, allowGeometryUpdates: _ag, ...rest }) {
-  return rest;
-}
+// ── Legg til lag (ett om gangen) ─────────────────────────────────────────────
 
-async function getExistingLayerCount(serviceUrl, token) {
-  const params = new URLSearchParams({ f: "json", token });
-  const res = await fetch(`${serviceUrl}?${params}`);
-  const data = await res.json();
-  return data.layers?.length ?? 0;
-}
-
-// Legger til lag fra og med `startIndex` – kan gjenoppta etter delvis feil
-async function addLayersToService(serviceUrl, token, onStatus, startIndex = 0) {
+async function addLayersToService(serviceUrl, onStatus, startIndex = 0) {
   const adminUrl = toAdminUrl(serviceUrl);
-  const remaining = LAYER_DEFINITIONS.slice(startIndex);
+  const toAdd = LAYER_DEFINITIONS.slice(startIndex);
 
-  for (const layerDef of remaining) {
-    const layer = stripLayerMeta(layerDef);
-    onStatus?.(`Oppretter lag ${layerDef.id + 1}/${LAYER_DEFINITIONS.length}: ${layer.name}…`);
+  for (const layerDef of toAdd) {
+    onStatus?.(`Oppretter lag ${layerDef.id + 1}/${LAYER_DEFINITIONS.length}: ${layerDef.name}…`);
 
-    const body = new URLSearchParams({
-      addToDefinition: JSON.stringify({ layers: [layer] }),
-      f: "json",
-      token,
-    });
+    const payload = buildLayerPayload(layerDef);
+    console.log(`[LARK] addToDefinition [${layerDef.name}]:`, JSON.stringify(payload));
 
-    const res = await fetch(`${adminUrl}/addToDefinition`, { method: "POST", body });
-    const text = await res.text();
-    console.log(`[LARK] addToDefinition [${layer.name}]:`, text);
-
-    let data;
-    try { data = JSON.parse(text); }
-    catch { throw new Error(`Ugyldig svar: ${text.slice(0, 300)}`); }
+    const data = await esriRequest(`${adminUrl}/addToDefinition`, {
+      method: "post",
+      body: {
+        addToDefinition: JSON.stringify({ layers: [payload] }),
+        f: "json",
+      },
+    }).then((r) => r.data);
 
     if (data.error) {
       const details = Array.isArray(data.error.details)
         ? data.error.details.join(" | ")
         : "";
       const msg = data.error.message || data.error.description || JSON.stringify(data.error);
-      throw new Error(`Lag «${layer.name}» feilet: ${msg} ${details}`.trim());
+      throw new Error(`Lag «${layerDef.name}» feilet: ${msg} ${details}`.trim());
+    }
+    if (!data.success) {
+      throw new Error(`Lag «${layerDef.name}»: uventet svar: ${JSON.stringify(data)}`);
     }
   }
 }
+
+// ── Sjekk antall lag i eksisterende tjeneste ─────────────────────────────────
+
+async function getExistingLayerCount(serviceUrl) {
+  const data = await esriRequest(serviceUrl, { query: { f: "json" } }).then((r) => r.data);
+  return data.layers?.length ?? 0;
+}
+
+// ── Hovedfunksjon ────────────────────────────────────────────────────────────
 
 export async function ensureLarkService(onStatus) {
   const cached = localStorage.getItem(STORAGE_KEY);
   if (cached) return cached;
 
-  const { token, username } = await getCredentials();
+  onStatus?.("Henter portalinformasjon…");
+  const { username } = await getPortalInfo();
 
   onStatus?.("Søker etter eksisterende LARK-tjeneste…");
-  const existing = await findExistingService(username, token);
+  const existing = await findExistingService(username);
 
   let serviceUrl;
 
   if (existing?.url) {
     serviceUrl = existing.url;
-    const existingCount = await getExistingLayerCount(serviceUrl, token);
+    const existingCount = await getExistingLayerCount(serviceUrl);
 
     if (existingCount >= LAYER_DEFINITIONS.length) {
-      // Alle lag finnes – tjenesten er klar
       localStorage.setItem(STORAGE_KEY, serviceUrl);
       return serviceUrl;
     }
 
-    // Delvis provisjonert – fortsett fra der det stoppet
     onStatus?.(`Fortsetter lagoppretting (${existingCount}/${LAYER_DEFINITIONS.length} ferdig)…`);
-    await addLayersToService(serviceUrl, token, onStatus, existingCount);
+    await addLayersToService(serviceUrl, onStatus, existingCount);
   } else {
     onStatus?.("Oppretter Feature Service i ArcGIS Online…");
-    let created;
-    try {
-      created = await createFeatureService(username, token);
-    } catch (e) {
-      if (e.message?.includes("already exists")) {
-        // Tjenesten finnes men dukket ikke opp i innholdssøket (f.eks. indeksforsinkelse).
-        // Vent litt og prøv å finne den igjen.
-        onStatus?.("Tjeneste finnes allerede – søker på nytt…");
-        await new Promise((r) => setTimeout(r, 3000));
-        const retry = await findExistingService(username, token);
-        if (!retry?.url) {
-          throw new Error(
-            `Tjenesten «${SERVICE_NAME}» eksisterer allerede i din ArcGIS Online-konto, ` +
-            `men kan ikke hentes automatisk. Gå til arcgis.com/home/content.html og slett ` +
-            `elementet «${SERVICE_NAME}», og last deretter siden på nytt.`
-          );
-        }
-        serviceUrl = retry.url;
-        const existingCount = await getExistingLayerCount(serviceUrl, token);
-        if (existingCount < LAYER_DEFINITIONS.length) {
-          await addLayersToService(serviceUrl, token, onStatus, existingCount);
-        }
-        localStorage.setItem(STORAGE_KEY, serviceUrl);
-        return serviceUrl;
-      }
-      throw e;
-    }
+    const created = await createFeatureService(username);
     serviceUrl = created.serviceurl ?? created.encodedServiceURL;
 
-    // Vent til tjenesten er tilgjengelig
     await new Promise((r) => setTimeout(r, 2000));
-    await addLayersToService(serviceUrl, token, onStatus, 0);
+    await addLayersToService(serviceUrl, onStatus, 0);
   }
 
   localStorage.setItem(STORAGE_KEY, serviceUrl);
