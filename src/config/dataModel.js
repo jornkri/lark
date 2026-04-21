@@ -1,6 +1,6 @@
 // LARK datamodell – basert på SOSI Park og grøntanlegg / NS 3420
 
-export const SERVICE_NAME = "LARK_Landskapsplan";
+export const SERVICE_NAME_PREFIX = "LARK_Landskapsplan";
 
 // ─── Felles domenelister ─────────────────────────────────────────────────────
 
