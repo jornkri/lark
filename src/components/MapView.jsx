@@ -6,6 +6,7 @@ import LayerList from "@arcgis/core/widgets/LayerList.js";
 import BasemapGallery from "@arcgis/core/widgets/BasemapGallery.js";
 import Expand from "@arcgis/core/widgets/Expand.js";
 import ScaleBar from "@arcgis/core/widgets/ScaleBar.js";
+import { on } from "@arcgis/core/core/reactiveUtils.js";
 import { ensureLarkService } from "../services/featureLayerSetup.js";
 import { signOut, getPortalUser } from "../services/auth.js";
 import { LAYER_DEFINITIONS } from "../config/dataModel.js";
@@ -116,19 +117,23 @@ export default function MapViewComponent({ onSignOut }) {
         if (destroyed) { view.destroy(); return; }
 
         // ── Slett-handling fra popup ───────────────────────────────────────
-        view.popup.on("trigger-action", async (event) => {
-          if (event.action.id !== "delete-feature") return;
-          const feature = view.popup.selectedFeature;
-          if (!feature) return;
-          const layer = feature.layer;
-          if (!layer?.applyEdits) return;
-          try {
-            await layer.applyEdits({ deleteFeatures: [feature] });
-            view.popup.close();
-          } catch (e) {
-            console.error("Sletting feilet:", e);
+        on(
+          () => view.popup,
+          "trigger-action",
+          async (event) => {
+            if (event.action.id !== "delete-feature") return;
+            const feature = view.popup.selectedFeature;
+            if (!feature) return;
+            const layer = feature.layer;
+            if (!layer?.applyEdits) return;
+            try {
+              await layer.applyEdits({ deleteFeatures: [feature] });
+              view.popup.close();
+            } catch (e) {
+              console.error("Sletting feilet:", e);
+            }
           }
-        });
+        );
 
         // ── Lagvelger ─────────────────────────────────────────────────────
         const layerList = new LayerList({
