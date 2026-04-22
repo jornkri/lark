@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import Map from "@arcgis/core/Map.js";
 import MapView from "@arcgis/core/views/MapView.js";
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer.js";
-import Editor from "@arcgis/core/widgets/Editor.js";
 import LayerList from "@arcgis/core/widgets/LayerList.js";
 import BasemapGallery from "@arcgis/core/widgets/BasemapGallery.js";
 import Expand from "@arcgis/core/widgets/Expand.js";
@@ -11,6 +10,7 @@ import { on } from "@arcgis/core/core/reactiveUtils.js";
 import { ensureLarkService } from "../services/featureLayerSetup.js";
 import { signOut, getPortalUser } from "../services/auth.js";
 import { LAYER_DEFINITIONS } from "../config/dataModel.js";
+import EditPanel from "./EditPanel.jsx";
 
 // Layer display order: polygons first (bottom), then lines, then points (top)
 const LAYER_ORDER = [0, 4, 5, 7, 1, 3, 2, 6];
@@ -61,6 +61,8 @@ export default function MapViewComponent({ onSignOut }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [user, setUser] = useState(null);
+  const [mapView, setMapView] = useState(null);
+  const [layersById, setLayersById] = useState(null);
 
   useEffect(() => {
     let view = null;
@@ -114,7 +116,7 @@ export default function MapViewComponent({ onSignOut }) {
         await view.when();
         if (destroyed) { view.destroy(); return; }
 
-        // ── Slett-handling fra popup ───────────────────────────────────────
+        // ── Slett-handling fra popup (reactiveUtils.on – v5.0 pattern) ────
         on(
           () => view.popup,
           "trigger-action",
@@ -132,49 +134,6 @@ export default function MapViewComponent({ onSignOut }) {
             }
           }
         );
-
-        // ── Editor (v5.0) med true curves, snapping og måleinput ──────────
-        const editor = new Editor({
-          view,
-          // Bruk stabilt widget-basert UI; nye Calcite-baserte create-verktøy
-          // (useLegacyCreateTools: false) har kjent DOM-timing-feil i Vite+React.
-          // True curves er styrt av SketchViewModel og geometrirepresentasjonen
-          // — ikke av dette valget.
-          useLegacyCreateTools: true,
-          snappingOptions: {
-            enabled: true,
-            selfEnabled: true,
-            featureSources: featureLayers.map((layer) => ({
-              layer,
-              enabled: true,
-            })),
-          },
-          tooltipOptions: {
-            enabled: true,
-            inputEnabled: true,
-          },
-          valueOptions: {
-            displayUnits: {
-              length: "meters",
-              area: "square-meters",
-            },
-          },
-          supportingWidgetDefaults: {
-            sketch: {
-              defaultCreateOptions: { hasZ: false },
-              defaultUpdateOptions: {
-                enableRotation: true,
-                enableScaling: true,
-                toggleToolOnClick: false,
-              },
-              visibleElements: {
-                undoRedoMenu: true,
-                settingsMenu: true,
-              },
-            },
-          },
-        });
-        view.ui.add(editor, "top-right");
 
         // ── Lagvelger ─────────────────────────────────────────────────────
         const layerList = new LayerList({ view });
@@ -201,6 +160,14 @@ export default function MapViewComponent({ onSignOut }) {
         // ── Målestokk ──────────────────────────────────────────────────────
         const scaleBar = new ScaleBar({ view, unit: "metric" });
         view.ui.add(scaleBar, "bottom-left");
+
+        // ── Eksponer view og lag til EditPanel ─────────────────────────────
+        const byId = {};
+        featureLayers.forEach((layer, i) => { byId[LAYER_ORDER[i]] = layer; });
+        if (!destroyed) {
+          setLayersById(byId);
+          setMapView(view);
+        }
 
         setLoading(false);
       } catch (err) {
@@ -243,6 +210,13 @@ export default function MapViewComponent({ onSignOut }) {
 
       {/* Kart */}
       <div ref={mapRef} className="map-container" />
+
+      {/* Redigeringspanel (React-basert, bruker SketchViewModel – ikke Calcite) */}
+      {mapView && layersById && !loading && (
+        <div className="edit-panel-wrapper">
+          <EditPanel view={mapView} layersById={layersById} />
+        </div>
+      )}
 
       {/* Laste-overlay */}
       {loading && (
