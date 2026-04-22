@@ -136,7 +136,11 @@ export default function MapViewComponent({ onSignOut }) {
         // ── Editor (v5.0) med true curves, snapping og måleinput ──────────
         const editor = new Editor({
           view,
-          // useLegacyCreateTools: false er standard i v5.0 → nye verktøy med true curves
+          // Bruk stabilt widget-basert UI; nye Calcite-baserte create-verktøy
+          // (useLegacyCreateTools: false) har kjent DOM-timing-feil i Vite+React.
+          // True curves er styrt av SketchViewModel og geometrirepresentasjonen
+          // — ikke av dette valget.
+          useLegacyCreateTools: true,
           snappingOptions: {
             enabled: true,
             selfEnabled: true,
@@ -147,12 +151,26 @@ export default function MapViewComponent({ onSignOut }) {
           },
           tooltipOptions: {
             enabled: true,
-            inputEnabled: true, // Tab-tasten aktiverer nøyaktig innmatning av lengde/retning
+            inputEnabled: true,
           },
           valueOptions: {
             displayUnits: {
               length: "meters",
               area: "square-meters",
+            },
+          },
+          supportingWidgetDefaults: {
+            sketch: {
+              defaultCreateOptions: { hasZ: false },
+              defaultUpdateOptions: {
+                enableRotation: true,
+                enableScaling: true,
+                toggleToolOnClick: false,
+              },
+              visibleElements: {
+                undoRedoMenu: true,
+                settingsMenu: true,
+              },
             },
           },
         });
