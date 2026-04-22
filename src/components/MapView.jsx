@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import Map from "@arcgis/core/Map.js";
 import MapView from "@arcgis/core/views/MapView.js";
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer.js";
-import Editor from "@arcgis/core/widgets/Editor.js";
 import LayerList from "@arcgis/core/widgets/LayerList.js";
 import BasemapGallery from "@arcgis/core/widgets/BasemapGallery.js";
 import Expand from "@arcgis/core/widgets/Expand.js";
@@ -10,9 +9,50 @@ import ScaleBar from "@arcgis/core/widgets/ScaleBar.js";
 import { ensureLarkService } from "../services/featureLayerSetup.js";
 import { signOut, getPortalUser } from "../services/auth.js";
 import { LAYER_DEFINITIONS } from "../config/dataModel.js";
+import EditPanel from "./EditPanel.jsx";
 
 // Layer display order: polygons first, then lines, then points
 const LAYER_ORDER = [0, 4, 5, 7, 1, 3, 2, 6];
+
+const LAYER_TITLES = {
+  0: "Grøntareal",
+  1: "Vegetasjon",
+  2: "Tre",
+  3: "Sti / vei",
+  4: "Hard flate",
+  5: "Vann",
+  6: "Møblering",
+  7: "Konstruksjon",
+};
+
+const DELETE_ACTION = {
+  title: "Slett objekt",
+  id: "delete-feature",
+  className: "esri-icon-trash",
+};
+
+function buildPopupTemplate(def) {
+  const fieldInfos = def.fields
+    .filter((f) => f.name !== "OBJECTID")
+    .map((f) => ({ fieldName: f.name, label: f.alias }));
+  return {
+    title: LAYER_TITLES[def.id],
+    content: [{ type: "fields", fieldInfos }],
+    actions: [DELETE_ACTION],
+  };
+}
+
+// Stylish Landscapes-inspired symbology (SDK autocast format)
+const LAYER_RENDERERS = {
+  0: { type: "simple", symbol: { type: "simple-fill", color: [178, 220, 138, 190], outline: { type: "simple-line", color: [88, 148, 58, 220], width: 1.5 } } },
+  1: { type: "simple", symbol: { type: "simple-fill", color: [94, 158, 68, 210],   outline: { type: "simple-line", color: [35, 95, 22, 255],   width: 1.2 } } },
+  2: { type: "simple", symbol: { type: "simple-marker", style: "circle",  color: [45, 112, 56, 255],  size: 16, outline: { type: "simple-line", color: [148, 210, 120, 255], width: 2.5 } } },
+  3: { type: "simple", symbol: { type: "simple-line",   color: [200, 168, 120, 255], width: 3 } },
+  4: { type: "simple", symbol: { type: "simple-fill", color: [208, 203, 187, 175], outline: { type: "simple-line", color: [148, 142, 126, 255], width: 1   } } },
+  5: { type: "simple", symbol: { type: "simple-fill", color: [150, 200, 224, 190], outline: { type: "simple-line", color: [52, 138, 196, 255],  width: 1.5 } } },
+  6: { type: "simple", symbol: { type: "simple-marker", style: "diamond", color: [200, 120, 50, 255],  size: 10, outline: { type: "simple-line", color: [120, 65, 10, 255],   width: 1.5 } } },
+  7: { type: "simple", symbol: { type: "simple-fill", color: [188, 168, 130, 200], outline: { type: "simple-line", color: [108, 80, 44, 255],   width: 1.8 } } },
+};
 
 export default function MapViewComponent({ onSignOut }) {
   const mapRef = useRef(null);
@@ -20,6 +60,8 @@ export default function MapViewComponent({ onSignOut }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [user, setUser] = useState(null);
+  const [mapView, setMapView] = useState(null);
+  const [layersById, setLayersById] = useState(null);
 
   useEffect(() => {
     let view = null;
@@ -46,8 +88,10 @@ export default function MapViewComponent({ onSignOut }) {
           (def) =>
             new FeatureLayer({
               url: `${serviceUrl}/${def.id}`,
-              title: def.name.replace(/_/g, " "),
+              title: LAYER_TITLES[def.id],
               outFields: ["*"],
+              renderer: LAYER_RENDERERS[def.id],
+              popupTemplate: buildPopupTemplate(def),
             })
         );
 
@@ -71,36 +115,20 @@ export default function MapViewComponent({ onSignOut }) {
         await view.when();
         if (destroyed) { view.destroy(); return; }
 
-        // ── Editor med snapping, true curves og målehjelp ─────────────────
-        const editor = new Editor({
-          view,
-          snappingOptions: {
-            enabled: true,
-            selfEnabled: true,
-            featureSources: featureLayers.map((layer) => ({
-              layer,
-              enabled: true,
-            })),
-          },
-          supportingWidgetDefaults: {
-            sketch: {
-              // Aktiver true curves og hjelpetekst
-              defaultUpdateOptions: {
-                tool: "reshape",
-                enableRotation: true,
-                enableScaling: true,
-                toggleToolOnClick: false,
-              },
-              defaultCreateOptions: {
-                hasZ: false,
-              },
-              visibleElements: {
-                undoRedoMenu: true,
-              },
-            },
-          },
+        // ── Slett-handling fra popup ───────────────────────────────────────
+        view.popup.on("trigger-action", async (event) => {
+          if (event.action.id !== "delete-feature") return;
+          const feature = view.popup.selectedFeature;
+          if (!feature) return;
+          const layer = feature.layer;
+          if (!layer?.applyEdits) return;
+          try {
+            await layer.applyEdits({ deleteFeatures: [feature] });
+            view.popup.close();
+          } catch (e) {
+            console.error("Sletting feilet:", e);
+          }
         });
-        view.ui.add(editor, "top-right");
 
         // ── Lagvelger ─────────────────────────────────────────────────────
         const layerList = new LayerList({
@@ -110,6 +138,11 @@ export default function MapViewComponent({ onSignOut }) {
               [{ title: "Zoom til lag", className: "esri-icon-zoom-in-magnifying-glass", id: "zoom-to" }],
             ];
           },
+        });
+        layerList.on("trigger-action", (event) => {
+          if (event.action.id === "zoom-to") {
+            view.goTo(event.item.layer.fullExtent).catch(() => {});
+          }
         });
         const layerExpand = new Expand({
           view,
@@ -134,6 +167,14 @@ export default function MapViewComponent({ onSignOut }) {
         // ── Målestokk ──────────────────────────────────────────────────────
         const scaleBar = new ScaleBar({ view, unit: "metric" });
         view.ui.add(scaleBar, "bottom-left");
+
+        // ── Eksponer view og lag til React ─────────────────────────────────
+        const byId = {};
+        featureLayers.forEach((layer, i) => { byId[LAYER_ORDER[i]] = layer; });
+        if (!destroyed) {
+          setLayersById(byId);
+          setMapView(view);
+        }
 
         setLoading(false);
       } catch (err) {
@@ -176,6 +217,13 @@ export default function MapViewComponent({ onSignOut }) {
 
       {/* Kart */}
       <div ref={mapRef} className="map-container" />
+
+      {/* Redigeringspanel */}
+      {mapView && layersById && !loading && (
+        <div className="edit-panel-wrapper">
+          <EditPanel view={mapView} layersById={layersById} />
+        </div>
+      )}
 
       {/* Laste-overlay */}
       {loading && (

@@ -45,11 +45,23 @@ function normalizeField(f) {
   return out;
 }
 
+const OID_FIELD = {
+  name:         "OBJECTID",
+  type:         "esriFieldTypeOID",
+  alias:        "OBJECTID",
+  sqlType:      "sqlTypeOther",
+  nullable:     false,
+  editable:     false,
+  domain:       null,
+  defaultValue: null,
+};
+
 function buildLayerPayload(def) {
   return {
     name:                 def.name,
     geometryType:         def.geometryType,
     description:          def.description ?? "",
+    objectIdField:        "OBJECTID",
     hasZ:                 false,
     hasM:                 false,
     allowGeometryUpdates: true,
@@ -57,7 +69,7 @@ function buildLayerPayload(def) {
     htmlPopupType:        "esriServerHTMLPopupTypeNone",
     types:                [],
     relationships:        [],
-    fields:               (def.fields ?? []).map(normalizeField),
+    fields:               [OID_FIELD, ...(def.fields ?? []).map(normalizeField)],
   };
 }
 
