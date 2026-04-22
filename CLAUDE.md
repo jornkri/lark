@@ -13,7 +13,7 @@ npm run preview   # preview production build
 
 ## Architecture
 
-**LARK** is a React + Vite single-page app for landscape planners. It uses ArcGIS Maps SDK for JavaScript (`@arcgis/core`) for maps and editing, and stores all spatial data as Hosted Feature Layers in the authenticated user's ArcGIS Online account.
+**LARK** is a React + Vite single-page app for landscape planners. It uses ArcGIS Maps SDK for JavaScript v5.0 (`@arcgis/core@^5.0.0`) for maps and editing, and stores all spatial data as Hosted Feature Layers in the authenticated user's ArcGIS Online account.
 
 ### Auth flow
 
@@ -23,7 +23,7 @@ npm run preview   # preview production build
 
 `src/services/featureLayerSetup.js` → `ensureLarkService(onStatus)`:
 1. Checks `localStorage` for a cached service URL (`lark_service_url`).
-2. If not cached, calls ArcGIS REST `createService` API to create a Feature Service named `LARK_Landskapsplan` in the user's AGOL account.
+2. If not cached, calls ArcGIS REST `createService` API to create a Feature Service named `LARK_Landskapsplan_<username>` in the user's AGOL account.
 3. POSTs `addToDefinition` with all 8 layer definitions to provision the schema.
 4. Caches the service URL in `localStorage`.
 
@@ -32,7 +32,7 @@ If you need to re-provision (e.g. schema changed), call `clearServiceCache()` fr
 ### Data model
 
 `src/config/dataModel.js` is the single source of truth for all layer schemas. It exports:
-- `SERVICE_NAME` — the AGOL service name (`"LARK_Landskapsplan"`)
+- `SERVICE_NAME_PREFIX` — base name for the AGOL service (`"LARK_Landskapsplan"`)
 - `LAYER_DEFINITIONS` — array of 8 layer definition objects, each with `id`, `geometryType`, `fields` (with embedded domain objects), and `drawingInfo`
 
 Layer IDs are stable and used directly as URL suffixes (`${serviceUrl}/${def.id}`). The layer order in `MapView.jsx` (`LAYER_ORDER`) controls draw order: polygons (0,4,5,7), then lines (3), then points (2,6), bottom to top.
@@ -43,9 +43,27 @@ All domain lists are defined inline in `dataModel.js` as `codedValue` objects an
 
 `src/components/MapView.jsx` initialises the `MapView` inside a `useEffect` with a `destroyed` flag to handle React strict-mode double-invocation safely. The cleanup function calls `view.destroy()`.
 
-The Esri `Editor` widget is added with:
-- `snappingOptions.enabled: true` with all feature layers as sources
-- `snappingOptions.selfEnabled: true` for self-snapping while drawing
+#### Editor widget (v5.0)
+
+The v5.0 `Editor` widget is the primary editing tool:
+- `useLegacyCreateTools` defaults to `false` in v5.0 → new create workflow with **true curves**
+- `snappingOptions.enabled: true` with all feature layers as sources + `selfEnabled: true`
+- `tooltipOptions.inputEnabled: true` → press `Tab` during drawing to enter exact length/direction/coordinates
+- `valueOptions.displayUnits` set to meters and square-meters for Norwegian context
+- The attribute form reads field aliases and domain values directly from the hosted service
+
+#### Event handling (SDK v5.0 pattern)
+
+In v5.0, widget events must use `reactiveUtils.on()` — widget instances no longer expose a plain `.on()` method:
+
+```js
+import { on } from "@arcgis/core/core/reactiveUtils.js";
+on(() => view.popup, "trigger-action", handler);
+```
+
+#### Popup templates
+
+Each FeatureLayer gets a `popupTemplate` (built by `buildPopupTemplate`) that shows all field aliases in Norwegian. A "Slett objekt" action calls `layer.applyEdits({ deleteFeatures })`.
 
 ### ArcGIS CSS
 
