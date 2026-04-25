@@ -3,3 +3,8 @@ dist
 .env
 *.local
 .DS_Store
+Thumbs.db
+*.~lock*
+~$*
+.claude/settings.local.json
+.superpowers/
