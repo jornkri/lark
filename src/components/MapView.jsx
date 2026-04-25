@@ -9,6 +9,18 @@ import { signOut, getPortalUser } from "../services/auth.js";
 import { LAYER_DEFINITIONS } from "../config/dataModel.js";
 import EditPanel from "./EditPanel.jsx";
 
+const LeafSVG = (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, opacity: 0.85 }} aria-hidden="true" focusable="false">
+    <path
+      d="M12 3 C7 3 3 7 3 12 C3 17 7 21 12 21 C12 21 12 14 12 12 C12 14 12 21 12 21 C17 21 21 17 21 12 C21 7 17 3 12 3Z"
+      fill="rgba(200,240,174,0.15)" stroke="#c8f0ae" strokeWidth="1.2"
+    />
+    <line x1="12" y1="3" x2="12" y2="21.5" stroke="rgba(200,240,174,0.3)" strokeWidth="0.8"/>
+    <path d="M12 8 Q8 10 7 13"  stroke="rgba(200,240,174,0.2)" strokeWidth="0.7" fill="none"/>
+    <path d="M12 8 Q16 10 17 13" stroke="rgba(200,240,174,0.2)" strokeWidth="0.7" fill="none"/>
+  </svg>
+);
+
 // Draw order: polygons first (bottom), then lines, then points (top)
 const LAYER_ORDER = [0, 4, 5, 7, 1, 3, 2, 6];
 
@@ -234,13 +246,17 @@ export default function MapViewComponent({ config, onSignOut, onOpenConfig, onCo
       {/* Topplinje */}
       <div className="top-bar">
         <div className="top-bar-left">
+          {LeafSVG}
           <span className="app-logo">{config?.appName || "LARK"}</span>
+          <div className="top-bar-sep" />
           <span className="app-subtitle">{config?.projectName || "Landskapsplanlegger"}</span>
         </div>
         <div className="top-bar-right">
           {user && <span className="username">{user.fullName}</span>}
-          <button className="sign-out-btn" title="Innstillinger" onClick={onOpenConfig}>⚙</button>
-          <button className="sign-out-btn" onClick={handleSignOut}>Logg ut</button>
+          <button className="top-bar-btn" title="Innstillinger" onClick={onOpenConfig}>
+            ⚙ Innstillinger
+          </button>
+          <button className="top-bar-btn" onClick={handleSignOut}>Logg ut</button>
         </div>
       </div>
 
