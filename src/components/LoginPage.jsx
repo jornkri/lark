@@ -2,7 +2,7 @@ import { useState } from "react";
 import { signIn } from "../services/auth.js";
 
 const LeafIcon = () => (
-  <svg width="40" height="40" viewBox="0 0 40 40" fill="none" className="login-leaf">
+  <svg width="40" height="40" viewBox="0 0 40 40" fill="none" className="login-leaf" aria-hidden="true" focusable="false">
     <circle cx="20" cy="20" r="19" stroke="rgba(200,240,174,0.12)" strokeWidth="1"/>
     <path
       d="M20 8 C14 8 9 13 9 19 C9 25 14 30 20 30 C20 30 20 22 20 19 C20 22 20 30 20 30 C26 30 31 25 31 19 C31 13 26 8 20 8Z"

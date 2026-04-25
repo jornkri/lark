@@ -293,3 +293,8 @@ body {
   color: rgba(6,14,5,0.45);
   cursor: not-allowed;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .login-blob-1,
+  .login-blob-2 { animation: none; }
+}
