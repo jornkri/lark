@@ -188,6 +188,115 @@ async function addLayersToService(serviceUrl, token, onStatus, startIndex = 0) {
   }
 }
 
+// ── Provisjonering av tilpassede lag ────────────────────────────────────────
+
+function isCustomLayerId(id) {
+  return typeof id === "string" && id.startsWith("c");
+}
+
+const D_STATUS_DOMAIN = {
+  type: "codedValue",
+  name: "D_Status_CL",
+  codedValues: [
+    { code: "PLAN",  name: "Planlagt"         },
+    { code: "UNDER", name: "Under utbygging"  },
+    { code: "EKSIS", name: "Eksisterende"     },
+    { code: "FJER",  name: "Skal fjernes"     },
+  ],
+};
+
+function buildCustomLayerPayload(clientId, layerCfg) {
+  const safeName = (layerCfg.displayName ?? "Custom")
+    .replace(/[^a-zA-Z0-9À-ɏ]/g, "_")
+    .slice(0, 25);
+  const name = `LARK_CL_${clientId.slice(1)}_${safeName}`;
+
+  const fields = [];
+  const typeField    = layerCfg.typeField;
+  const codedValues  = layerCfg.customDomainValues ?? [];
+
+  if (typeField && codedValues.length > 0) {
+    fields.push(normalizeField({
+      name:     typeField,
+      type:     "esriFieldTypeString",
+      alias:    "Type",
+      length:   30,
+      nullable: true,
+      editable: true,
+      domain: {
+        type:        "codedValue",
+        name:        `D_${typeField}_CL`,
+        codedValues,
+      },
+    }));
+  }
+
+  fields.push(
+    normalizeField({ name: "Navn",        type: "esriFieldTypeString", alias: "Navn",        length: 100, nullable: true, editable: true }),
+    normalizeField({ name: "Status",      type: "esriFieldTypeString", alias: "Status",       length: 10,  nullable: true, editable: true, domain: D_STATUS_DOMAIN }),
+    normalizeField({ name: "Beskrivelse", type: "esriFieldTypeString", alias: "Beskrivelse",  length: 500, nullable: true, editable: true }),
+  );
+
+  return {
+    name,
+    geometryType:         layerCfg.geometryType,
+    description:          layerCfg.displayName ?? "Tilpasset lag",
+    objectIdField:        "OBJECTID",
+    hasZ:                 false,
+    hasM:                 false,
+    allowGeometryUpdates: true,
+    hasAttachments:       false,
+    htmlPopupType:        "esriServerHTMLPopupTypeNone",
+    types:                [],
+    relationships:        [],
+    fields:               [OID_FIELD, ...fields],
+    _clientId:            clientId,  // used to match after query
+    _layerName:           name,
+  };
+}
+
+export async function provisionCustomLayers(serviceUrl, configLayers, onStatus) {
+  if (!configLayers) return configLayers;
+
+  const toProvision = Object.entries(configLayers).filter(
+    ([key, val]) => isCustomLayerId(key) && val.agolLayerId == null && val.geometryType
+  );
+  if (toProvision.length === 0) return configLayers;
+
+  const { token } = await getCredentials();
+  const adminUrl   = toAdminUrl(serviceUrl);
+  const updated    = { ...configLayers };
+
+  for (const [clientId, layerCfg] of toProvision) {
+    onStatus?.(`Oppretter tilpasset lag: ${layerCfg.displayName}…`);
+    const payload    = buildCustomLayerPayload(clientId, layerCfg);
+    const layerName  = payload._layerName;
+    delete payload._clientId;
+    delete payload._layerName;
+
+    const data = await agolPost(`${adminUrl}/addToDefinition`, {
+      addToDefinition: JSON.stringify({ layers: [payload] }),
+      f:     "json",
+      token,
+    });
+
+    if (data.error) {
+      console.error(`[LARK] Tilpasset lag «${layerCfg.displayName}» feilet:`, data.error);
+      continue;
+    }
+
+    // Brief pause then query service to find the new layer's AGOL index
+    await new Promise((r) => setTimeout(r, 1500));
+    const serviceInfo = await agolGet(serviceUrl, { f: "json", token });
+    const found = (serviceInfo.layers ?? []).find((l) => l.name === layerName);
+    if (found != null) {
+      updated[clientId] = { ...layerCfg, agolLayerId: found.id };
+    }
+  }
+
+  return updated;
+}
+
 // ── Hovedfunksjon ────────────────────────────────────────────────────────────
 
 export async function ensureLarkService(onStatus) {

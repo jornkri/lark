@@ -24,8 +24,8 @@ export default function LoginPage({ onSignIn }) {
         <div className="login-logo">LARK</div>
         <p className="login-tagline">Landskapsplanlegger</p>
         <p className="login-desc">
-          Logg inn med din ArcGIS Online-konto for å opprette og redigere
-          landskapsplaner.
+          Tegn, klassifiser og lagre landskapsplaner direkte i
+          din ArcGIS Online-konto.
         </p>
         {error && <p className="error-msg">{error}</p>}
         <button className="login-btn" onClick={handleLogin} disabled={loading}>
