@@ -298,3 +298,357 @@ body {
   .login-blob-1,
   .login-blob-2 { animation: none; }
 }
+
+/* ── Redigeringspanel wrapper ────────────────────────────────────────────── */
+.edit-panel-wrapper {
+  position: absolute;
+  top: 62px;
+  right: 14px;
+  z-index: 30;
+  max-height: calc(100vh - 78px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(200,240,174,0.12) transparent;
+}
+
+/* ── Panel (glass) ───────────────────────────────────────────────────────── */
+.ep {
+  width: 264px;
+  background: var(--bg-surface);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-subtle);
+  border-radius: 13px;
+  box-shadow: var(--glass-shadow);
+  padding: 0.9rem 0.9rem 1rem;
+}
+
+.ep-section-label {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--accent-ghost);
+  margin-bottom: 0.5rem;
+}
+
+/* ── Layers ──────────────────────────────────────────────────────────────── */
+.ep-layers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  margin-bottom: 0.65rem;
+}
+
+.ep-layer-icon {
+  width: 15px; height: 15px;
+  object-fit: contain;
+  vertical-align: middle;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.ep-layer-row { display: flex; align-items: center; gap: 0.2rem; }
+.ep-layer-row .ep-layer-btn { flex: 1; }
+.ep-layer-btn.hidden-layer { opacity: 0.38; }
+
+.ep-layer-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+  width: 100%;
+  padding: 0.38rem 0.55rem;
+  border: 1px solid rgba(200,240,174,0.06);
+  border-radius: 7px;
+  background: rgba(200,240,174,0.03);
+  cursor: pointer;
+  font-size: 0.73rem;
+  font-weight: 400;
+  color: var(--accent-muted);
+  font-family: inherit;
+  transition: background 0.12s, border-color 0.12s;
+  text-align: left;
+}
+.ep-layer-btn:hover { background: rgba(200,240,174,0.06); border-color: rgba(200,240,174,0.12); }
+.ep-layer-btn.active {
+  background: rgba(200,240,174,0.08);
+  border-color: var(--border-active);
+  font-weight: 600;
+  color: var(--accent-dim);
+}
+
+.ep-swatch {
+  display: inline-block;
+  width: 9px; height: 9px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  border: 1px solid rgba(0,0,0,0.15);
+}
+
+.ep-eye-btn {
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-size: 0.72rem;
+  line-height: 1;
+  padding: 0.24rem 0.28rem;
+  border-radius: 5px;
+  transition: background 0.12s, border-color 0.12s;
+}
+.ep-eye-btn:hover { background: rgba(200,240,174,0.06); border-color: rgba(200,240,174,0.12); }
+.ep-eye-off { opacity: 0.35; }
+
+.ep-divider {
+  height: 1px;
+  background: rgba(200,240,174,0.05);
+  margin: 0.72rem 0 0.6rem;
+}
+
+.ep-body { margin-top: 0.15rem; }
+
+/* ── Tool grid ───────────────────────────────────────────────────────────── */
+.ep-tool-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.28rem;
+}
+
+.ep-tool-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.22rem;
+  padding: 0.65rem 0.35rem 0.55rem;
+  background: rgba(200,240,174,0.04);
+  border: 1px solid rgba(200,240,174,0.08);
+  border-radius: 9px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
+  min-height: 58px;
+}
+.ep-tool-tile:hover {
+  background: rgba(200,240,174,0.08);
+  border-color: rgba(200,240,174,0.16);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.ep-tool-tile:active { transform: scale(0.97); }
+.ep-tool-tile-icon  { font-size: 1.25rem; line-height: 1; display: block; }
+.ep-tool-tile-label { font-size: 0.67rem; font-weight: 600; color: var(--accent-ghost); letter-spacing: 0.02em; line-height: 1; }
+
+/* ── Drawing state ───────────────────────────────────────────────────────── */
+.ep-drawing-state { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.1rem 0; }
+
+.ep-active-tool-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: rgba(26,74,16,0.6);
+  border: 1px solid rgba(200,240,174,0.12);
+  color: var(--accent);
+  border-radius: 7px;
+  padding: 0.38rem 0.7rem;
+  font-size: 0.79rem;
+  font-weight: 600;
+}
+.ep-active-tool-icon { font-size: 1rem; line-height: 1; }
+
+.ep-drawing-hint {
+  font-size: 0.76rem;
+  color: var(--accent-ghost);
+  line-height: 1.55;
+  text-align: center;
+  padding: 0 0.1rem;
+}
+
+.ep-drawing-actions { display: flex; gap: 0.3rem; }
+
+.ep-drawing-action-btn {
+  flex: 1;
+  padding: 0.4rem 0.35rem;
+  background: rgba(200,240,174,0.04);
+  border: 1px solid rgba(200,240,174,0.09);
+  border-radius: 7px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--accent-ghost);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+.ep-drawing-action-btn:hover { background: rgba(200,240,174,0.08); border-color: rgba(200,240,174,0.16); }
+
+.ep-drawing-action-confirm {
+  background: rgba(26,74,16,0.7);
+  color: var(--accent);
+  border-color: rgba(200,240,174,0.15);
+  font-weight: 600;
+}
+.ep-drawing-action-confirm:hover { background: rgba(34,96,26,0.8); }
+
+.ep-drawing-action-cancel { color: #c07070; border-color: rgba(180,80,80,0.2); }
+.ep-drawing-action-cancel:hover { background: rgba(180,60,60,0.1); border-color: rgba(180,80,80,0.35); }
+
+/* ── Attribute form ──────────────────────────────────────────────────────── */
+.ep-form { display: flex; flex-direction: column; gap: 0.55rem; }
+
+.ep-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  font-size: 0.71rem;
+  color: var(--accent-ghost);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.ep-field input,
+.ep-field select,
+.ep-field textarea {
+  padding: 0.36rem 0.5rem;
+  border: 1px solid rgba(200,240,174,0.1);
+  border-radius: 6px;
+  font-size: 0.79rem;
+  font-family: inherit;
+  font-weight: 400;
+  color: var(--accent-dim);
+  background: rgba(200,240,174,0.04);
+  width: 100%;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.ep-field input:focus,
+.ep-field select:focus,
+.ep-field textarea:focus {
+  outline: none;
+  border-color: rgba(200,240,174,0.25);
+  box-shadow: 0 0 0 3px rgba(200,240,174,0.06);
+}
+.ep-field textarea { resize: vertical; min-height: 50px; }
+
+.ep-error {
+  font-size: 0.74rem;
+  color: #f09090;
+  background: rgba(180,40,40,0.12);
+  border: 1px solid rgba(180,40,40,0.25);
+  border-radius: 6px;
+  padding: 0.35rem 0.55rem;
+}
+
+.ep-form-actions { display: flex; gap: 0.45rem; margin-top: 0.25rem; }
+
+.ep-btn-save {
+  flex: 1;
+  padding: 0.5rem;
+  background: var(--action-bg);
+  color: var(--accent);
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.ep-btn-save:hover:not(:disabled) { background: var(--action-bg-hover); }
+.ep-btn-save:disabled { background: rgba(26,74,16,0.4); cursor: not-allowed; }
+
+.ep-btn-ghost {
+  background: transparent;
+  border: 1px solid rgba(200,240,174,0.1);
+  color: var(--accent-ghost);
+  border-radius: 6px;
+  padding: 0.36rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-family: inherit;
+  font-weight: 500;
+  transition: background 0.12s, border-color 0.12s;
+}
+.ep-btn-ghost:hover { background: rgba(200,240,174,0.06); border-color: rgba(200,240,174,0.16); }
+
+.ep-saved {
+  font-size: 0.77rem;
+  color: var(--accent-dim);
+  font-weight: 600;
+  text-align: center;
+  margin-top: 0.5rem;
+  letter-spacing: 0.02em;
+}
+
+.ep-edit-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.73rem;
+  color: var(--accent-ghost);
+  background: rgba(200,240,174,0.04);
+  border: 1px solid rgba(200,240,174,0.08);
+  border-radius: 6px;
+  padding: 0.33rem 0.55rem;
+  margin-bottom: 0.5rem;
+}
+
+.ep-geom-btn {
+  width: 100%;
+  padding: 0.45rem 0.5rem;
+  background: rgba(200,240,174,0.04);
+  color: var(--accent-dim);
+  border: 1px solid rgba(200,240,174,0.1);
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: inherit;
+  margin-bottom: 0.55rem;
+  transition: background 0.12s, border-color 0.12s;
+}
+.ep-geom-btn:hover { background: rgba(200,240,174,0.08); border-color: rgba(200,240,174,0.18); }
+
+.ep-live-measure {
+  font-size: 0.79rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(200,240,174,0.07);
+  border: 1px solid rgba(200,240,174,0.14);
+  border-radius: 6px;
+  padding: 0.32rem 0.55rem;
+  margin: 0.3rem 0;
+  text-align: center;
+}
+
+.ep-areal {
+  font-size: 0.75rem;
+  color: var(--accent-ghost);
+  background: rgba(200,240,174,0.04);
+  border: 1px solid rgba(200,240,174,0.08);
+  border-radius: 6px;
+  padding: 0.3rem 0.55rem;
+}
+
+.ep-hint-sub { font-size: 0.7rem; color: var(--accent-ghost); opacity: 0.7; margin-bottom: 0.45rem; }
+
+/* ── Basemap switcher ────────────────────────────────────────────────────── */
+.ep-basemaps {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.28rem;
+}
+.ep-basemap-btn {
+  padding: 0.34rem 0.4rem;
+  border: 1px solid rgba(200,240,174,0.08);
+  border-radius: 6px;
+  background: rgba(200,240,174,0.03);
+  cursor: pointer;
+  font-size: 0.68rem;
+  font-family: inherit;
+  color: var(--accent-ghost);
+  transition: background 0.12s, border-color 0.12s;
+}
+.ep-basemap-btn:hover { background: rgba(200,240,174,0.07); border-color: rgba(200,240,174,0.14); }
+.ep-basemap-btn.active {
+  background: var(--action-bg);
+  color: var(--accent);
+  border-color: var(--action-bg);
+  font-weight: 600;
+}
