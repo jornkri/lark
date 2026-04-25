@@ -10,7 +10,7 @@ import { LAYER_DEFINITIONS } from "../config/dataModel.js";
 import EditPanel from "./EditPanel.jsx";
 
 const LeafSVG = (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, opacity: 0.85 }} aria-hidden="true" focusable="false">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, opacity: 0.85 }} aria-hidden="true">
     <path
       d="M12 3 C7 3 3 7 3 12 C3 17 7 21 12 21 C12 21 12 14 12 12 C12 14 12 21 12 21 C17 21 21 17 21 12 C21 7 17 3 12 3Z"
       fill="rgba(200,240,174,0.15)" stroke="#c8f0ae" strokeWidth="1.2"
