@@ -289,13 +289,11 @@ export default function MapViewComponent({ config, onSignOut, onOpenConfig, onCo
         Powered by <a href="https://www.esri.com" target="_blank" rel="noreferrer">Esri</a>
       </div>
 
-      {/* Laste-overlay */}
+      {/* Innlastingspill */}
       {loading && (
-        <div className="loading-overlay">
-          <div className="loading-box">
-            <div className="spinner" />
-            <p>{status}</p>
-          </div>
+        <div className="loading-pill">
+          <div className="spinner-sm" />
+          <span>{status}</span>
         </div>
       )}
 
