@@ -602,18 +602,16 @@ export default function EditPanel({ view, layersById, config, editRequest, onEdi
               <button
                 className={"ep-layer-btn" + (activeId === id ? " active" : "") + (visible ? "" : " hidden-layer")}
                 onClick={() => pickLayer(id)}
+                style={{ "--layer-color": info.color }}
               >
-                <LayerIcon icon={info.icon} className="ep-layer-icon" />
-                <span className="ep-swatch" style={{ background: info.color, opacity: visible ? 1 : 0.35 }} />
                 {info.label}
               </button>
               <button
-                className={"ep-eye-btn" + (visible ? "" : " ep-eye-off")}
+                className={"ep-vis-dot" + (visible ? "" : " off")}
+                style={{ background: info.color }}
                 title={visible ? "Skjul lag" : "Vis lag"}
                 onClick={() => toggleVisibility(id)}
-              >
-                {visible ? "👁" : "🚫"}
-              </button>
+              />
             </div>
           );
         })}
