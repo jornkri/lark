@@ -220,6 +220,7 @@ export default function EditPanel({ view, layersById, config, editRequest, onEdi
   const [basemap,      setBasemap]      = useState("topo-vector");
   const [liveMeasure,  setLiveMeasure]  = useState(null);
   const [activeTool,   setActiveTool]   = useState(null); // tool key from DRAW_TOOLS
+  const [collapsed,    setCollapsed]    = useState(false);
 
   const sketchRef              = useRef(null);
   const tempLayerRef           = useRef(null);
@@ -558,8 +559,38 @@ export default function EditPanel({ view, layersById, config, editRequest, onEdi
   }
 
   // ── Render ──────────────────────────────────────────────────────────────────
+  if (collapsed) {
+    return (
+      <div className="ep ep-strip">
+        <button className="ep-strip-toggle" title="Åpne panel" onClick={() => setCollapsed(false)}>›</button>
+        <div className="ep-strip-sep" />
+        {visibleLayerIds.map((id) => {
+          const info = getLayerInfo(id, config);
+          return (
+            <div
+              key={String(id)}
+              className={"ep-strip-dot" + (activeId === id ? " active" : "")}
+              style={{ background: info.color }}
+              title={info.label}
+              onClick={() => { setCollapsed(false); pickLayer(id); }}
+            />
+          );
+        })}
+        {activeId !== null && (
+          <>
+            <div className="ep-strip-sep" />
+            {getTools(getGeomType(activeId, config)).map((t) => (
+              <span key={t.key} className="ep-strip-tool" title={t.label}>{t.icon}</span>
+            ))}
+          </>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="ep">
+      <button className="ep-strip-toggle ep-strip-toggle-close" title="Minimer panel" onClick={() => setCollapsed(true)}>‹</button>
       <p className="ep-section-label">Kartlag</p>
 
       <div className="ep-layers">
