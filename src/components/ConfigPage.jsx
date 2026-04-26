@@ -4,6 +4,18 @@ import { COORD_SYSTEMS, GEOM_LABELS, saveConfig, isCustomLayerId, makeCustomLaye
 
 const DEFS_BY_ID = Object.fromEntries(LAYER_DEFINITIONS.map((d) => [d.id, d]));
 
+const LeafSVG = (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, opacity: 0.85 }} aria-hidden="true">
+    <path
+      d="M12 3 C7 3 3 7 3 12 C3 17 7 21 12 21 C12 21 12 14 12 12 C12 14 12 21 12 21 C17 21 21 17 21 12 C21 7 17 3 12 3Z"
+      fill="rgba(200,240,174,0.15)" stroke="#c8f0ae" strokeWidth="1.2"
+    />
+    <line x1="12" y1="3" x2="12" y2="21.5" stroke="rgba(200,240,174,0.3)" strokeWidth="0.8"/>
+    <path d="M12 8 Q8 10 7 13"  stroke="rgba(200,240,174,0.2)" strokeWidth="0.7" fill="none"/>
+    <path d="M12 8 Q16 10 17 13" stroke="rgba(200,240,174,0.2)" strokeWidth="0.7" fill="none"/>
+  </svg>
+);
+
 const DEFAULT_CUSTOM_ICON = "https://img.icons8.com/color/48/add-layer.png";
 
 // ── Icon renderer (handles both icons8 URL and emoji) ─────────────────────────
@@ -663,6 +675,16 @@ export default function ConfigPage({ config, onSave, onBack }) {
   const [dragIdx,      setDragIdx]      = useState(null);
   const [dragOverIdx,  setDragOverIdx]  = useState(null);
 
+  const NAV_ITEMS = [
+    { id: "general",   label: "Generelt",   icon: "⚙" },
+    { id: "datamodel", label: "Datamodell", icon: "◫" },
+    { id: "symbology", label: "Symbolikk",  icon: "◎", future: true },
+    { id: "export",    label: "Eksport",    icon: "⤓", future: true },
+    { id: "sharing",   label: "Deling",     icon: "↗", future: true },
+  ];
+
+  const [activeSection, setActiveSection] = useState("general");
+
   function flash(which) {
     if (which === "general") {
       setSavedGeneral(true);
@@ -737,97 +759,131 @@ export default function ConfigPage({ config, onSave, onBack }) {
 
   return (
     <div className="cfg-page">
+      {/* Topbar */}
       <div className="top-bar">
         <div className="top-bar-left">
+          {LeafSVG}
           <span className="app-logo">{appName || "LARK"}</span>
-          <span className="app-subtitle">Konfigurasjon</span>
+          <div className="top-bar-sep" />
+          <span className="app-subtitle">Innstillinger</span>
         </div>
         <div className="top-bar-right">
-          <button className="sign-out-btn" onClick={onBack}>← Tilbake til kart</button>
+          <button className="top-bar-btn" onClick={onBack}>← Tilbake til kart</button>
         </div>
       </div>
 
-      <div className="cfg-content">
+      {/* Layout */}
+      <div className="cfg-layout">
 
-        {/* ── Generelle innstillinger ─────────────────────────────────────── */}
-        <div className="cfg-card">
-          <h2 className="cfg-card-title">Generelle innstillinger</h2>
+        {/* Left nav */}
+        <nav className="cfg-sidebar">
+          <div className="cfg-sidebar-label">Innstillinger</div>
+          {NAV_ITEMS.map((item) => (
+            <button
+              key={item.id}
+              className={"cfg-nav-item" + (activeSection === item.id ? " active" : "") + (item.future ? " future" : "")}
+              onClick={() => !item.future && setActiveSection(item.id)}
+            >
+              <span className="cfg-nav-icon">{item.icon}</span>
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </nav>
 
-          <div className="cfg-field">
-            <label className="cfg-field-label">Applikasjonsnavn</label>
-            <input type="text" value={appName} onChange={(e) => setAppName(e.target.value)} />
-          </div>
+        {/* Content area */}
+        <div className="cfg-content-area">
 
-          <div className="cfg-field">
-            <label className="cfg-field-label">Prosjektnavn</label>
-            <input type="text" value={projectName} placeholder="F.eks. Bjørneparken 2026" onChange={(e) => setProjectName(e.target.value)} />
-          </div>
+          {/* ── Generelt ── */}
+          {activeSection === "general" && (
+            <>
+              <div className="cfg-section-header">
+                <h1>Generelle innstillinger</h1>
+                <p>Grunnleggende konfigurasjon for applikasjon og prosjekt.</p>
+              </div>
 
-          <div className="cfg-field">
-            <label className="cfg-field-label">Koordinatsystem</label>
-            <select value={coordSystem} onChange={(e) => setCoordSystem(e.target.value)}>
-              {COORD_SYSTEMS.map((cs) => (
-                <option key={cs.id} value={cs.id}>{cs.label}</option>
-              ))}
-            </select>
-            <span className="cfg-field-note">Brukes til visning av koordinater og målinger</span>
-          </div>
+              <div className="cfg-card">
+                <h3 className="cfg-card-title">Applikasjon</h3>
+                <div className="cfg-grid-2">
+                  <div className="cfg-field">
+                    <label className="cfg-field-label">Applikasjonsnavn</label>
+                    <input type="text" value={appName} onChange={(e) => setAppName(e.target.value)} />
+                  </div>
+                  <div className="cfg-field">
+                    <label className="cfg-field-label">Prosjektnavn</label>
+                    <input type="text" value={projectName} placeholder="F.eks. Bjørneparken 2026" onChange={(e) => setProjectName(e.target.value)} />
+                  </div>
+                </div>
+              </div>
 
-          <div className="cfg-save-area">
-            <button className="cfg-save-btn" onClick={handleSaveGeneral}>Lagre</button>
-            {savedGeneral && <span className="cfg-saved">✓ Lagret</span>}
-          </div>
-        </div>
+              <div className="cfg-card">
+                <h3 className="cfg-card-title">Koordinatsystem</h3>
+                <div className="cfg-field">
+                  <select value={coordSystem} onChange={(e) => setCoordSystem(e.target.value)}>
+                    {COORD_SYSTEMS.map((cs) => (
+                      <option key={cs.id} value={cs.id}>{cs.label}</option>
+                    ))}
+                  </select>
+                  <span className="cfg-field-note">Brukes til visning av koordinater og målinger</span>
+                </div>
+              </div>
 
-        {/* ── Datamodell ──────────────────────────────────────────────────── */}
-        <div className="cfg-card cfg-card-wide">
-          <h2 className="cfg-card-title">Datamodell</h2>
-          <p className="cfg-card-desc">
-            Aktiver/deaktiver lag, endre navn og ikon, og rediger domeneverdier.
-            Dra i håndtaket (⠿) for å endre rekkefølgen. Klikk "+ Typer" for å redigere typeverdier.
-          </p>
-
-          <DataModelGraph layers={layers} />
-
-          <div className="cfg-layers">
-            {layerOrder.map((id, idx) => {
-              const isCustom = isCustomLayerId(id);
-              const layerCfg = layers[id];
-              if (!layerCfg) return null;
-              return (
-                <LayerRow
-                  key={String(id)}
-                  layerId={id}
-                  layerCfg={layerCfg}
-                  isCustom={isCustom}
-                  onUpdate={(cfg) => updateLayer(id, cfg)}
-                  onDelete={() => deleteCustomLayer(id)}
-                  dragging={dragIdx === idx}
-                  dragOver={dragOverIdx === idx && dragIdx !== idx}
-                  onDragStart={() => handleDragStart(idx)}
-                  onDragEnter={(e) => handleDragEnter(e, idx)}
-                  onDragOver={handleDragOver}
-                  onDrop={() => handleDrop(idx)}
-                  onDragEnd={handleDragEnd}
-                />
-              );
-            })}
-          </div>
-
-          <AddCustomLayerForm onAdd={addCustomLayer} />
-
-          <div className="cfg-save-area">
-            <button className="cfg-save-btn" onClick={handleSaveModel}>Lagre datamodell</button>
-            {savedModel && <span className="cfg-saved">✓ Lagret</span>}
-          </div>
-
-          {layerOrder.some((id) => isCustomLayerId(id) && layers[id]?.agolLayerId == null) && (
-            <p className="cfg-provision-note">
-              ⚠ Nye tilpassede lag klargjøres automatisk neste gang du åpner kartet.
-            </p>
+              <div className="cfg-save-area">
+                <button className="cfg-save-btn" onClick={handleSaveGeneral}>Lagre</button>
+                {savedGeneral && <span className="cfg-saved">✓ Lagret</span>}
+              </div>
+            </>
           )}
-        </div>
 
+          {/* ── Datamodell ── */}
+          {activeSection === "datamodel" && (
+            <>
+              <div className="cfg-section-header">
+                <h1>Datamodell</h1>
+                <p>Aktiver/deaktiver lag, endre navn og ikon, og rediger domeneverdier. Dra i håndtaket (⠿) for å endre rekkefølgen.</p>
+              </div>
+
+              <div className="cfg-card cfg-card-wide">
+                <DataModelGraph layers={layers} />
+                <div className="cfg-layers">
+                  {layerOrder.map((id, idx) => {
+                    const isCustom = isCustomLayerId(id);
+                    const layerCfg = layers[id];
+                    if (!layerCfg) return null;
+                    return (
+                      <LayerRow
+                        key={String(id)}
+                        layerId={id}
+                        layerCfg={layerCfg}
+                        isCustom={isCustom}
+                        onUpdate={(cfg) => updateLayer(id, cfg)}
+                        onDelete={() => deleteCustomLayer(id)}
+                        dragging={dragIdx === idx}
+                        dragOver={dragOverIdx === idx && dragIdx !== idx}
+                        onDragStart={() => handleDragStart(idx)}
+                        onDragEnter={(e) => handleDragEnter(e, idx)}
+                        onDragOver={handleDragOver}
+                        onDrop={() => handleDrop(idx)}
+                        onDragEnd={handleDragEnd}
+                      />
+                    );
+                  })}
+                </div>
+                <AddCustomLayerForm onAdd={addCustomLayer} />
+                {layerOrder.some((id) => isCustomLayerId(id) && layers[id]?.agolLayerId == null) && (
+                  <p className="cfg-provision-note">
+                    ⚠ Nye tilpassede lag klargjøres automatisk neste gang du åpner kartet.
+                  </p>
+                )}
+              </div>
+
+              <div className="cfg-save-area">
+                <button className="cfg-save-btn" onClick={handleSaveModel}>Lagre datamodell</button>
+                {savedModel && <span className="cfg-saved">✓ Lagret</span>}
+              </div>
+            </>
+          )}
+
+        </div>
       </div>
     </div>
   );
