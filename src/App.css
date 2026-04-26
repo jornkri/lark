@@ -767,6 +767,7 @@ body {
   color: var(--accent-ghost);
   background: rgba(5,12,4,0.70);
   backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   padding: 2px 8px;
   border-radius: 4px;
   border: 1px solid rgba(200,240,174,0.05);
@@ -789,6 +790,7 @@ body {
   flex: 1;
   display: flex;
   overflow: hidden;
+  padding-top: 48px;
 }
 
 /* ── Venstre nav ─────────────────────────────────────────────────────────── */

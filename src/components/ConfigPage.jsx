@@ -18,6 +18,14 @@ const LeafSVG = (
 
 const DEFAULT_CUSTOM_ICON = "https://img.icons8.com/color/48/add-layer.png";
 
+const NAV_ITEMS = [
+  { id: "general",   label: "Generelt",   icon: "⚙" },
+  { id: "datamodel", label: "Datamodell", icon: "◫" },
+  { id: "symbology", label: "Symbolikk",  icon: "◎", future: true },
+  { id: "export",    label: "Eksport",    icon: "⤓", future: true },
+  { id: "sharing",   label: "Deling",     icon: "↗", future: true },
+];
+
 // ── Icon renderer (handles both icons8 URL and emoji) ─────────────────────────
 
 function LayerIcon({ icon, className }) {
@@ -674,14 +682,6 @@ export default function ConfigPage({ config, onSave, onBack }) {
   const [savedModel,   setSavedModel]   = useState(false);
   const [dragIdx,      setDragIdx]      = useState(null);
   const [dragOverIdx,  setDragOverIdx]  = useState(null);
-
-  const NAV_ITEMS = [
-    { id: "general",   label: "Generelt",   icon: "⚙" },
-    { id: "datamodel", label: "Datamodell", icon: "◫" },
-    { id: "symbology", label: "Symbolikk",  icon: "◎", future: true },
-    { id: "export",    label: "Eksport",    icon: "⤓", future: true },
-    { id: "sharing",   label: "Deling",     icon: "↗", future: true },
-  ];
 
   const [activeSection, setActiveSection] = useState("general");
 
