@@ -91,12 +91,15 @@ const GEOM_TOOL = {
   esriGeometryPoint:    "point",
 };
 
-const STATUS_OPTS = [
-  { code: "PLAN",  label: "Planlagt"        },
-  { code: "EKSIS", label: "Eksisterende"    },
-  { code: "UNDER", label: "Under utbygging" },
-  { code: "FJER",  label: "Skal fjernes"   },
-];
+// Custom-layer fallback domain for Status
+const CUSTOM_STATUS_DOMAIN = {
+  codedValues: [
+    { code: "PLAN",  name: "Planlagt"         },
+    { code: "UNDER", name: "Under utbygging"  },
+    { code: "EKSIS", name: "Eksisterende"     },
+    { code: "FJER",  name: "Skal fjernes"     },
+  ],
+};
 
 const BASEMAPS = [
   { id: "topo-vector",    label: "Topo"    },
@@ -124,6 +127,101 @@ const DRAW_TOOLS = {
 };
 
 function getTools(geomType) { return DRAW_TOOLS[geomType] ?? []; }
+
+// Returns editable field definitions for the attrs step, excluding typeField and auto-calculated fields
+function getAttrFields(layerId) {
+  if (isCustomLayerId(layerId)) {
+    return [
+      { name: "Status",      alias: "Status",      type: "esriFieldTypeString", domain: CUSTOM_STATUS_DOMAIN },
+      { name: "Navn",        alias: "Navn",        type: "esriFieldTypeString" },
+      { name: "Beskrivelse", alias: "Beskrivelse", type: "esriFieldTypeString" },
+    ];
+  }
+  const def = LAYER_DEFINITIONS.find((d) => d.id === layerId);
+  if (!def) return [];
+  const typeFieldName = LAYER_META[layerId]?.typeField;
+  const skipFields = new Set(["OBJECTID", "GlobalID", "Shape_Area", "Shape_Length", "Areal_m2", typeFieldName].filter(Boolean));
+  return def.fields.filter((f) => !skipFields.has(f.name) && f.editable !== false);
+}
+
+// ── TypePicker — card grid for type selection ─────────────────────────────────
+
+function TypePicker({ opts, value, onChange }) {
+  return (
+    <div className="ep-type-grid">
+      {opts.map((o) => (
+        <button
+          key={o.code}
+          className={"ep-type-card" + (value === o.code ? " selected" : "")}
+          onClick={() => onChange(o.code)}
+        >
+          {o.name}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ── FieldInput — renders a single attr field ──────────────────────────────────
+
+function FieldInput({ field, value, onChange }) {
+  const opts = field.domain?.codedValues;
+
+  if (opts) {
+    if (opts.length <= 6) {
+      return (
+        <div className="ep-field">
+          <span className="ep-field-label">{field.alias}</span>
+          <div className="ep-pill-group">
+            {opts.map((o) => (
+              <button
+                key={o.code}
+                className={"ep-pill" + (value === o.code ? " selected" : "")}
+                onClick={() => onChange(value === o.code ? "" : o.code)}
+              >
+                {o.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+    return (
+      <label className="ep-field">
+        {field.alias}
+        <select value={value ?? ""} onChange={(e) => onChange(e.target.value)}>
+          <option value="">– velg –</option>
+          {opts.map((o) => <option key={o.code} value={o.code}>{o.name}</option>)}
+        </select>
+      </label>
+    );
+  }
+
+  if (field.name === "Beskrivelse") {
+    return (
+      <label className="ep-field">
+        {field.alias}
+        <textarea rows={2} placeholder="Valgfritt" value={value ?? ""} onChange={(e) => onChange(e.target.value)} />
+      </label>
+    );
+  }
+
+  if (field.type === "esriFieldTypeDouble" || field.type === "esriFieldTypeInteger") {
+    return (
+      <label className="ep-field">
+        {field.alias}
+        <input type="number" min="0" step={field.type === "esriFieldTypeInteger" ? "1" : "any"} value={value ?? ""} onChange={(e) => onChange(e.target.value)} />
+      </label>
+    );
+  }
+
+  return (
+    <label className="ep-field">
+      {field.alias}
+      <input type="text" placeholder="Valgfritt" value={value ?? ""} onChange={(e) => onChange(e.target.value)} />
+    </label>
+  );
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -390,9 +488,11 @@ export default function EditPanel({ view, layersById, config, editRequest, onEdi
     if (id === activeId && !collapsed) { setCollapsed(true); return; }
     resetSketch(); clearLabels();
     setActiveId(id); setEditingFeature(null); setPendingGeom(null);
-    setPhase("idle"); setAttrs({}); setErr(null); setSaved(false); setLiveMeasure(null);
+    setAttrs({}); setErr(null); setSaved(false); setLiveMeasure(null);
     const geomType = getGeomType(id, config);
     setActiveTool(getTools(geomType)[0]?.key ?? null);
+    const typeField = LAYER_META[id]?.typeField;
+    setPhase(typeField ? "type-select" : "attrs");
     setCollapsed(false);
   }
 
@@ -559,56 +659,7 @@ export default function EditPanel({ view, layersById, config, editRequest, onEdi
     .map(([key]) => key);
 
   const visibleLayerIds = [...standardIds, ...customIds];
-
-  // Shared attribute form
-  function AttrForm({ onSave, onCancel, saveLabel }) {
-    return (
-      <div className="ep-form">
-        <p className="ep-section-label">Egenskaper</p>
-
-        {typeOpts.length > 0 && (
-          <label className="ep-field">
-            Type
-            <select value={attrs[meta.typeField] ?? ""} onChange={(e) => setAttr(meta.typeField, e.target.value)}>
-              <option value="">– velg –</option>
-              {typeOpts.map((o) => <option key={o.code} value={o.code}>{o.name}</option>)}
-            </select>
-          </label>
-        )}
-
-        {attrs.Areal_m2 != null && (
-          <div className="ep-areal">Areal: <strong>{Number(attrs.Areal_m2).toLocaleString("nb-NO")} m²</strong></div>
-        )}
-
-        <label className="ep-field">
-          Navn
-          <input placeholder="Valgfritt" value={attrs.Navn ?? ""} onChange={(e) => setAttr("Navn", e.target.value)} />
-        </label>
-
-        <label className="ep-field">
-          Status
-          <select value={attrs.Status ?? ""} onChange={(e) => setAttr("Status", e.target.value)}>
-            <option value="">– velg –</option>
-            {STATUS_OPTS.map((o) => <option key={o.code} value={o.code}>{o.label}</option>)}
-          </select>
-        </label>
-
-        <label className="ep-field">
-          Beskrivelse
-          <textarea rows={2} placeholder="Valgfritt" value={attrs.Beskrivelse ?? ""} onChange={(e) => setAttr("Beskrivelse", e.target.value)} />
-        </label>
-
-        {err && <p className="ep-error">{err}</p>}
-
-        <div className="ep-form-actions">
-          <button className="ep-btn-save" onClick={onSave} disabled={saving}>
-            {saving ? "Lagrer…" : saveLabel}
-          </button>
-          <button className="ep-btn-ghost" onClick={onCancel}>Avbryt</button>
-        </div>
-      </div>
-    );
-  }
+  const attrFields      = activeId !== null ? getAttrFields(activeId) : [];
 
   // ── Render ──────────────────────────────────────────────────────────────────
   if (collapsed) {
@@ -638,8 +689,11 @@ export default function EditPanel({ view, layersById, config, editRequest, onEdi
     );
   }
 
+  const selectedTypeName = meta?.typeField ? typeOpts.find((o) => o.code === attrs[meta.typeField])?.name : null;
+
   return (
     <div className="ep">
+      {/* ── Theme header ── */}
       <div className="ep-theme-header">
         <div className="ep-theme-dot" style={{ background: meta?.color ?? "#8ab870" }} />
         <span className="ep-theme-name">{meta?.label ?? "Tegning"}</span>
@@ -651,34 +705,71 @@ export default function EditPanel({ view, layersById, config, editRequest, onEdi
         </button>
       </div>
 
-      <p className="ep-section-label">Tegning</p>
-
       {activeId !== null && (
         <div className="ep-body">
 
-          {/* ── Idle – tool grid ── */}
-          {phase === "idle" && activeGeomType && (
-            <div className="ep-tool-grid">
-              {getTools(activeGeomType).map((t) => (
-                <button
-                  key={t.key}
-                  type="button"
-                  className="ep-tool-tile"
-                  onClick={() => startDraw(t.key)}
-                  title={t.label}
-                >
-                  <span className="ep-tool-tile-icon">{t.icon}</span>
-                  <span className="ep-tool-tile-label">{t.label}</span>
-                </button>
-              ))}
+          {/* ── Step 1: Type selection ── */}
+          {phase === "type-select" && (
+            <div>
+              <p className="ep-step-label">Velg type</p>
+              <TypePicker
+                opts={typeOpts}
+                value={attrs[meta.typeField] ?? ""}
+                onChange={(code) => { setAttr(meta.typeField, code); setPhase("attrs"); }}
+              />
             </div>
           )}
 
-          {/* ── Drawing – expanded controls ── */}
+          {/* ── Step 2: Attributes ── */}
+          {phase === "attrs" && (
+            <div>
+              {meta?.typeField && (
+                <button className="ep-back-btn" onClick={() => setPhase("type-select")}>
+                  ← {selectedTypeName ?? "Endre type"}
+                </button>
+              )}
+              <div className="ep-attrs-fields">
+                {attrFields.map((field) => (
+                  <FieldInput
+                    key={field.name}
+                    field={field}
+                    value={attrs[field.name] ?? ""}
+                    onChange={(val) => setAttr(field.name, val)}
+                  />
+                ))}
+              </div>
+              <button className="ep-tegn-btn" onClick={() => setPhase("idle")}>
+                Tegn →
+              </button>
+            </div>
+          )}
+
+          {/* ── Step 3: Draw tool grid ── */}
+          {phase === "idle" && activeGeomType && (
+            <div>
+              <button className="ep-back-btn" onClick={() => setPhase("attrs")}>← Egenskaper</button>
+              <div className="ep-tool-grid">
+                {getTools(activeGeomType).map((t) => (
+                  <button
+                    key={t.key}
+                    type="button"
+                    className="ep-tool-tile"
+                    onClick={() => startDraw(t.key)}
+                    title={t.label}
+                  >
+                    <span className="ep-tool-tile-icon">{t.icon}</span>
+                    <span className="ep-tool-tile-label">{t.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Drawing in progress ── */}
           {phase === "drawing" && (() => {
-            const toolDef = getTools(activeGeomType).find((t) => t.key === activeTool);
+            const toolDef  = getTools(activeGeomType).find((t) => t.key === activeTool);
             const isFreehand = activeTool?.includes("freehand");
-            const isVertex = !isFreehand && activeGeomType !== "esriGeometryPoint";
+            const isVertex   = !isFreehand && activeGeomType !== "esriGeometryPoint";
             return (
               <div className="ep-drawing-state">
                 {toolDef && (
@@ -696,27 +787,16 @@ export default function EditPanel({ view, layersById, config, editRequest, onEdi
                 </p>
                 {liveMeasure && (
                   <div className="ep-live-measure">
-                    {liveMeasure.type === "length"
-                      ? formatLength(liveMeasure.value)
-                      : formatArea(liveMeasure.value)}
+                    {liveMeasure.type === "length" ? formatLength(liveMeasure.value) : formatArea(liveMeasure.value)}
                   </div>
                 )}
                 <div className="ep-drawing-actions">
                   {isVertex && (
-                    <button
-                      type="button"
-                      className="ep-drawing-action-btn"
-                      onClick={() => sketchRef.current?.undo()}
-                      title="Angre siste punkt"
-                    >
+                    <button type="button" className="ep-drawing-action-btn" onClick={() => sketchRef.current?.undo()} title="Angre siste punkt">
                       ↩ Angre
                     </button>
                   )}
-                  <button
-                    type="button"
-                    className="ep-drawing-action-btn ep-drawing-action-cancel"
-                    onClick={cancelDraw}
-                  >
+                  <button type="button" className="ep-drawing-action-btn ep-drawing-action-cancel" onClick={cancelDraw}>
                     × Avbryt
                   </button>
                 </div>
@@ -724,26 +804,54 @@ export default function EditPanel({ view, layersById, config, editRequest, onEdi
             );
           })()}
 
-          {/* ── Attribute form – new feature ── */}
+          {/* ── After draw: area + save ── */}
           {phase === "form" && (
             <div>
-              <button className="ep-geom-btn" onClick={() => startGeomEdit("form")}>
-                ✏ Rediger geometri
-              </button>
-              <AttrForm onSave={handleSave} onCancel={cancelDraw} saveLabel="Lagre" />
+              {attrs.Areal_m2 != null && (
+                <div className="ep-areal">Areal: <strong>{Number(attrs.Areal_m2).toLocaleString("nb-NO")} m²</strong></div>
+              )}
+              <button className="ep-geom-btn" onClick={() => startGeomEdit("form")}>✏ Rediger geometri</button>
+              {err && <p className="ep-error">{err}</p>}
+              <div className="ep-form-actions">
+                <button className="ep-btn-save" onClick={handleSave} disabled={saving}>{saving ? "Lagrer…" : "Lagre"}</button>
+                <button className="ep-btn-ghost" onClick={cancelDraw}>Avbryt</button>
+              </div>
             </div>
           )}
 
-          {/* ── Edit existing ── */}
+          {/* ── Edit existing feature (from popup) ── */}
           {phase === "edit" && (
             <div>
-              <button className="ep-geom-btn" onClick={startGeomEdit}>
-                ✏ Rediger geometri
-              </button>
-              {pendingGeom && (
-                <p className="ep-hint-sub" style={{ marginBottom: "0.4rem" }}>Ny geometri klar</p>
+              {typeOpts.length > 0 && (
+                <div className="ep-edit-type-section">
+                  <p className="ep-step-label">Type</p>
+                  <TypePicker
+                    opts={typeOpts}
+                    value={attrs[meta.typeField] ?? ""}
+                    onChange={(code) => setAttr(meta.typeField, code)}
+                  />
+                </div>
               )}
-              <AttrForm onSave={handleUpdate} onCancel={cancelEdit} saveLabel="Oppdater" />
+              <div className="ep-attrs-fields">
+                {attrFields.map((field) => (
+                  <FieldInput
+                    key={field.name}
+                    field={field}
+                    value={attrs[field.name] ?? ""}
+                    onChange={(val) => setAttr(field.name, val)}
+                  />
+                ))}
+              </div>
+              {attrs.Areal_m2 != null && (
+                <div className="ep-areal">Areal: <strong>{Number(attrs.Areal_m2).toLocaleString("nb-NO")} m²</strong></div>
+              )}
+              <button className="ep-geom-btn" onClick={startGeomEdit}>✏ Rediger geometri</button>
+              {pendingGeom && <p className="ep-hint-sub" style={{ marginBottom: "0.4rem" }}>Ny geometri klar</p>}
+              {err && <p className="ep-error">{err}</p>}
+              <div className="ep-form-actions">
+                <button className="ep-btn-save" onClick={handleUpdate} disabled={saving}>{saving ? "Lagrer…" : "Oppdater"}</button>
+                <button className="ep-btn-ghost" onClick={cancelEdit}>Avbryt</button>
+              </div>
             </div>
           )}
 
@@ -754,41 +862,20 @@ export default function EditPanel({ view, layersById, config, editRequest, onEdi
                 <span className="ep-active-tool-icon">✏</span>
                 <span>Rediger geometri</span>
               </div>
-              <p className="ep-drawing-hint">
-                Dra i punkter for å omforme · klikk utenfor for å fullføre
-              </p>
+              <p className="ep-drawing-hint">Dra i punkter for å omforme · klikk utenfor for å fullføre</p>
               {liveMeasure && (
                 <div className="ep-live-measure">
-                  {liveMeasure.type === "length"
-                    ? formatLength(liveMeasure.value)
-                    : formatArea(liveMeasure.value)}
+                  {liveMeasure.type === "length" ? formatLength(liveMeasure.value) : formatArea(liveMeasure.value)}
                 </div>
               )}
               <div className="ep-drawing-actions">
-                <button
-                  type="button"
-                  className="ep-drawing-action-btn ep-drawing-action-confirm"
-                  onClick={() => sketchRef.current?.complete()}
-                  title="Bekreft geometri"
-                >
+                <button type="button" className="ep-drawing-action-btn ep-drawing-action-confirm" onClick={() => sketchRef.current?.complete()} title="Bekreft geometri">
                   ✓ Ferdig
                 </button>
-                <button
-                  type="button"
-                  className="ep-drawing-action-btn"
-                  onClick={() => sketchRef.current?.undo()}
-                  title="Angre siste endring"
-                >
+                <button type="button" className="ep-drawing-action-btn" onClick={() => sketchRef.current?.undo()} title="Angre siste endring">
                   ↩ Angre
                 </button>
-                <button
-                  type="button"
-                  className="ep-drawing-action-btn ep-drawing-action-cancel"
-                  onClick={() => {
-                    resetSketch(); clearLabels(); setLiveMeasure(null);
-                    setPhase(geomEditReturnPhaseRef.current);
-                  }}
-                >
+                <button type="button" className="ep-drawing-action-btn ep-drawing-action-cancel" onClick={() => { resetSketch(); clearLabels(); setLiveMeasure(null); setPhase(geomEditReturnPhaseRef.current); }}>
                   × Avbryt
                 </button>
               </div>

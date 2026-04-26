@@ -411,6 +411,138 @@ body {
 .ep-tool-tile-icon  { font-size: 1.1rem; line-height: 1; display: block; opacity: 0.7; }
 .ep-tool-tile-label { font-size: 0.72rem; font-weight: 600; color: var(--accent-muted); letter-spacing: 0.01em; line-height: 1; }
 
+/* ── Step label & back navigation ───────────────────────────────────────── */
+.ep-step-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--accent-muted);
+  margin-bottom: 0.6rem;
+}
+
+.ep-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: none;
+  border: none;
+  padding: 0;
+  margin-bottom: 0.8rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent-ghost);
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: color 0.12s;
+}
+.ep-back-btn:hover { color: var(--accent-muted); }
+
+/* ── Type picker card grid ───────────────────────────────────────────────── */
+.ep-type-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.32rem;
+  margin-bottom: 0.5rem;
+}
+
+.ep-type-card {
+  padding: 0.55rem 0.4rem;
+  background: rgba(200,240,174,0.03);
+  border: 1px solid rgba(200,240,174,0.08);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: var(--accent-dim);
+  cursor: pointer;
+  text-align: center;
+  line-height: 1.3;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.ep-type-card:hover {
+  background: rgba(200,240,174,0.07);
+  border-color: rgba(200,240,174,0.16);
+  color: var(--accent);
+}
+.ep-type-card.selected {
+  background: rgba(200,240,174,0.10);
+  border-color: rgba(200,240,174,0.28);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ── Attrs fields ────────────────────────────────────────────────────────── */
+.ep-attrs-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.ep-field-label {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--accent-ghost);
+  margin-bottom: 0.4rem;
+}
+
+/* ── Pill group (domain fields ≤6 options) ───────────────────────────────── */
+.ep-pill-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.28rem;
+}
+
+.ep-pill {
+  padding: 0.28rem 0.62rem;
+  background: rgba(200,240,174,0.03);
+  border: 1px solid rgba(200,240,174,0.10);
+  border-radius: 20px;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--accent-ghost);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+.ep-pill:hover {
+  background: rgba(200,240,174,0.07);
+  color: var(--accent-muted);
+}
+.ep-pill.selected {
+  background: rgba(200,240,174,0.12);
+  border-color: rgba(200,240,174,0.32);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ── Tegn (proceed to draw) button ──────────────────────────────────────── */
+.ep-tegn-btn {
+  width: 100%;
+  padding: 0.58rem;
+  background: var(--action-bg);
+  border: 1px solid rgba(200,240,174,0.14);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  transition: background 0.12s, border-color 0.12s;
+}
+.ep-tegn-btn:hover {
+  background: rgba(30,60,20,0.8);
+  border-color: rgba(200,240,174,0.22);
+}
+
+.ep-edit-type-section { margin-bottom: 0.9rem; }
+
 /* ── Drawing state ───────────────────────────────────────────────────────── */
 .ep-drawing-state { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.1rem 0; }
 
