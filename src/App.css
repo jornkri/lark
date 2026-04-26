@@ -332,61 +332,45 @@ body {
   margin-bottom: 0.5rem;
 }
 
-/* ── Layers ──────────────────────────────────────────────────────────────── */
-.ep-layers {
+/* ── Theme header (expanded panel) ──────────────────────────────────────── */
+.ep-theme-header {
   display: flex;
-  flex-direction: column;
-  gap: 0.22rem;
-  margin-bottom: 0.65rem;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid rgba(200,240,174,0.06);
 }
 
-.ep-layer-row { display: flex; align-items: center; gap: 0.45rem; }
-.ep-layer-row .ep-layer-btn { flex: 1; }
-.ep-layer-btn.hidden-layer { opacity: 0.4; }
+.ep-theme-dot {
+  flex-shrink: 0;
+  width: 10px; height: 10px;
+  border-radius: 3px;
+}
 
-.ep-layer-btn {
-  width: 100%;
-  padding: 0.42rem 0.65rem;
-  border: 1px solid rgba(200,240,174,0.06);
-  border-left: 3px solid var(--layer-color, var(--border-subtle));
-  border-radius: 7px;
-  background: rgba(200,240,174,0.03);
-  cursor: pointer;
-  font-size: 0.78rem;
-  font-weight: 500;
-  color: var(--accent-dim);
-  font-family: inherit;
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
-  text-align: left;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.ep-layer-btn:hover {
-  background: rgba(200,240,174,0.06);
-  border-color: rgba(200,240,174,0.12);
-  border-left-color: var(--layer-color, var(--accent));
-  color: var(--accent);
-}
-.ep-layer-btn.active {
-  background: rgba(200,240,174,0.08);
-  border-color: rgba(200,240,174,0.12);
-  border-left-color: var(--layer-color, var(--accent));
+.ep-theme-name {
+  flex: 1;
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--accent);
+  letter-spacing: 0.01em;
 }
 
-.ep-vis-dot {
+.ep-close-btn {
   flex-shrink: 0;
-  width: 9px; height: 9px;
-  border-radius: 50%;
-  border: none;
+  width: 26px; height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(200,240,174,0.04);
+  border: 1px solid rgba(200,240,174,0.07);
+  border-radius: 6px;
   cursor: pointer;
-  opacity: 0.8;
-  transition: opacity 0.18s, transform 0.12s;
+  color: var(--accent-ghost);
+  transition: background 0.12s, color 0.12s;
 }
-.ep-vis-dot:hover { opacity: 1; transform: scale(1.25); }
-.ep-vis-dot.off { opacity: 0.18; }
+.ep-close-btn:hover { background: rgba(200,240,174,0.09); color: var(--accent-muted); }
+.ep-close-btn svg { width: 13px; height: 13px; }
 
 .ep-divider {
   height: 1px;
@@ -642,59 +626,43 @@ body {
   font-weight: 600;
 }
 
-/* ── Panel collapse / icon strip ─────────────────────────────────────────── */
-.ep-strip {
-  width: 38px;
+/* ── Icon strip (default / collapsed state) ──────────────────────────────── */
+.ep-icon-strip {
+  width: 50px;
   padding: 0.5rem 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.48rem;
+  gap: 0.2rem;
+  background: var(--bg-surface);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-subtle);
+  border-radius: 13px;
+  box-shadow: var(--glass-shadow);
 }
 
-.ep-strip-toggle {
+.ep-icon-btn {
+  width: 36px; height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
+  border-radius: 8px;
+  color: var(--accent-ghost);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+.ep-icon-btn:hover {
   color: var(--accent-muted);
-  font-size: 1rem;
-  line-height: 1;
-  cursor: pointer;
-  padding: 0.1rem;
-  transition: color 0.15s;
+  background: rgba(200,240,174,0.05);
 }
-.ep-strip-toggle:hover { color: var(--accent); }
-.ep-strip-toggle-close {
-  align-self: flex-end;
-  margin-right: 0.35rem;
-  margin-bottom: 0.1rem;
-  font-size: 0.85rem;
-  color: var(--accent-ghost);
+.ep-icon-btn.active {
+  color: var(--accent);
+  background: rgba(200,240,174,0.08);
 }
-
-.ep-strip-sep {
-  width: 18px;
-  height: 1px;
-  background: rgba(200,240,174,0.07);
-}
-
-.ep-strip-dot {
-  width: 10px; height: 10px;
-  border-radius: 2px;
-  cursor: pointer;
-  flex-shrink: 0;
-  opacity: 0.75;
-  transition: opacity 0.12s, transform 0.12s;
-}
-.ep-strip-dot:hover { opacity: 1; transform: scale(1.15); }
-.ep-strip-dot.active { opacity: 1; box-shadow: 0 0 6px currentColor; }
-
-.ep-strip-tool {
-  font-size: 0.85rem;
-  line-height: 1;
-  color: var(--accent-ghost);
-  cursor: default;
-  opacity: 0.6;
-}
+.ep-icon-btn svg { width: 20px; height: 20px; }
 
 /* ── Zoom-knapper ────────────────────────────────────────────────────────── */
 .zoom-controls {

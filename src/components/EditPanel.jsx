@@ -11,14 +11,72 @@ import { isCustomLayerId } from "../services/appConfig.js";
 // ── Static layer metadata (colors & type-field names for standard layers) ────
 
 const LAYER_META = {
-  0: { label: "Grøntareal",   icon: "https://img.icons8.com/color/48/nature--v1.png",    color: "#B2DC8A", typeField: "GrontarealType"   },
-  1: { label: "Vegetasjon",   icon: "https://img.icons8.com/color/48/rainforest.png",     color: "#5E9E44", typeField: "VegetasjonType"    },
-  2: { label: "Tre",          icon: "https://img.icons8.com/color/48/deciduous-tree.png", color: "#2D7038", typeField: null                },
-  3: { label: "Sti / vei",    icon: "https://img.icons8.com/color/48/road.png",           color: "#C8A878", typeField: "StiType"           },
-  4: { label: "Hard flate",   icon: "https://img.icons8.com/color/48/bricks.png",         color: "#D0CBBB", typeField: "HardFlateType"     },
-  5: { label: "Vann",         icon: "https://img.icons8.com/color/48/lake.png",           color: "#96C8E0", typeField: "VannType"          },
-  6: { label: "Møblering",    icon: "https://img.icons8.com/color/48/park-bench.png",     color: "#C87832", typeField: "MobleringType"     },
-  7: { label: "Konstruksjon", icon: "https://img.icons8.com/color/48/brick-wall.png",     color: "#BCAB82", typeField: "KonstruksjonsType" },
+  0: { label: "Grøntareal",   color: "#B2DC8A", typeField: "GrontarealType"   },
+  1: { label: "Vegetasjon",   color: "#5E9E44", typeField: "VegetasjonType"    },
+  2: { label: "Tre",          color: "#2D7038", typeField: null                },
+  3: { label: "Sti / vei",    color: "#C8A878", typeField: "StiType"           },
+  4: { label: "Hard flate",   color: "#D0CBBB", typeField: "HardFlateType"     },
+  5: { label: "Vann",         color: "#96C8E0", typeField: "VannType"          },
+  6: { label: "Møblering",    color: "#C87832", typeField: "MobleringType"     },
+  7: { label: "Konstruksjon", color: "#BCAB82", typeField: "KonstruksjonsType" },
+};
+
+const LAYER_ICONS = {
+  0: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3C9 7 6 10 6 14a6 6 0 0012 0c0-4-3-7-6-11z"/>
+      <line x1="12" y1="22" x2="12" y2="14"/>
+    </svg>
+  ),
+  1: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 18c0-3 2-5 5-5 1 0 2 .3 2.8.8A4.5 4.5 0 0116.5 14c2.5 0 4.5 2 4.5 4H3z"/>
+      <path d="M10 13c0-3 1.5-5 4-6"/>
+      <path d="M14 13c0-3-1-5-2-6"/>
+    </svg>
+  ),
+  2: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3L3 17h18L12 3z"/>
+      <rect x="10" y="17" width="4" height="4" rx="0.5"/>
+    </svg>
+  ),
+  3: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 21L9 3"/>
+      <path d="M19 21L15 3"/>
+      <line x1="12" y1="7" x2="12" y2="10" strokeDasharray="2 1.5"/>
+      <line x1="12" y1="13" x2="12" y2="16" strokeDasharray="2 1.5"/>
+    </svg>
+  ),
+  4: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="8" height="8" rx="0.5"/>
+      <rect x="13" y="3" width="8" height="8" rx="0.5"/>
+      <rect x="3" y="13" width="8" height="8" rx="0.5"/>
+      <rect x="13" y="13" width="8" height="8" rx="0.5"/>
+    </svg>
+  ),
+  5: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3C9 8 6 11 6 15a6 6 0 0012 0c0-4-3-7-6-12z"/>
+    </svg>
+  ),
+  6: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="10" width="18" height="2.5" rx="1.25"/>
+      <path d="M7 12.5v5M17 12.5v5"/>
+      <path d="M5 17.5h14"/>
+      <path d="M7 10.5V7h10v3.5"/>
+    </svg>
+  ),
+  7: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="6" width="18" height="15" rx="1"/>
+      <path d="M3 10h18M3 14h18"/>
+      <path d="M8 10v4M16 10v4M8 14v7M16 14v7"/>
+    </svg>
+  ),
 };
 
 const CUSTOM_COLORS = {
@@ -67,15 +125,6 @@ const DRAW_TOOLS = {
 
 function getTools(geomType) { return DRAW_TOOLS[geomType] ?? []; }
 
-// ── Icon renderer (handles both icons8 URL and emoji fallback) ────────────────
-
-function LayerIcon({ icon, className }) {
-  if (!icon) return null;
-  if (icon.startsWith("http"))
-    return <img className={className} src={icon} alt="" />;
-  return <span className={className}>{icon}</span>;
-}
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function getLayerInfo(id, config) {
@@ -83,7 +132,6 @@ function getLayerInfo(id, config) {
     const cfg = config?.layers?.[id] ?? {};
     return {
       label:     cfg.displayName ?? "Tilpasset lag",
-      icon:      cfg.icon        ?? "https://img.icons8.com/color/48/add-layer.png",
       color:     CUSTOM_COLORS[cfg.geometryType] ?? "#9090A8",
       typeField: cfg.typeField   ?? null,
     };
@@ -91,7 +139,6 @@ function getLayerInfo(id, config) {
   const base = LAYER_META[id] ?? {};
   return {
     label:     config?.layers?.[id]?.displayName ?? base.label,
-    icon:      config?.layers?.[id]?.icon        ?? base.icon,
     color:     base.color,
     typeField: base.typeField ?? null,
   };
@@ -220,7 +267,7 @@ export default function EditPanel({ view, layersById, config, editRequest, onEdi
   const [basemap,      setBasemap]      = useState("topo-vector");
   const [liveMeasure,  setLiveMeasure]  = useState(null);
   const [activeTool,   setActiveTool]   = useState(null); // tool key from DRAW_TOOLS
-  const [collapsed,    setCollapsed]    = useState(false);
+  const [collapsed,    setCollapsed]    = useState(true);
 
   const sketchRef              = useRef(null);
   const tempLayerRef           = useRef(null);
@@ -277,6 +324,7 @@ export default function EditPanel({ view, layersById, config, editRequest, onEdi
     setPhase("edit");
     setErr(null);
     setSaved(false);
+    setCollapsed(false);
   }, [editRequest]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => () => { resetSketch(); }, []);
@@ -339,11 +387,13 @@ export default function EditPanel({ view, layersById, config, editRequest, onEdi
 
   // ── Layer selection ─────────────────────────────────────────────────────────
   function pickLayer(id) {
+    if (id === activeId && !collapsed) { setCollapsed(true); return; }
     resetSketch(); clearLabels();
     setActiveId(id); setEditingFeature(null); setPendingGeom(null);
     setPhase("idle"); setAttrs({}); setErr(null); setSaved(false); setLiveMeasure(null);
     const geomType = getGeomType(id, config);
     setActiveTool(getTools(geomType)[0]?.key ?? null);
+    setCollapsed(false);
   }
 
   // ── Drawing ─────────────────────────────────────────────────────────────────
@@ -441,6 +491,7 @@ export default function EditPanel({ view, layersById, config, editRequest, onEdi
     resetSketch(); clearLabels(); setLiveMeasure(null);
     setEditingFeature(null); setPendingGeom(null);
     setPhase("idle"); setAttrs({}); setErr(null);
+    setCollapsed(true);
     onEditDone?.();
   }
 
@@ -476,6 +527,7 @@ export default function EditPanel({ view, layersById, config, editRequest, onEdi
       tempLayerRef.current?.removeAll();
       setPhase("idle"); setEditingFeature(null); setPendingGeom(null); setAttrs({});
       setSaved(true); setTimeout(() => setSaved(false), 2500);
+      setCollapsed(true);
       onEditDone?.();
     } catch (e) { setErr(e.message); }
     finally { setSaving(false); }
@@ -561,70 +613,45 @@ export default function EditPanel({ view, layersById, config, editRequest, onEdi
   // ── Render ──────────────────────────────────────────────────────────────────
   if (collapsed) {
     return (
-      <div className="ep ep-strip">
-        <button className="ep-strip-toggle" title="Åpne panel" onClick={() => setCollapsed(false)}>›</button>
-        <div className="ep-strip-sep" />
+      <div className="ep-icon-strip">
         {visibleLayerIds.map((id) => {
           const info = getLayerInfo(id, config);
+          const icon = !isCustomLayerId(id)
+            ? LAYER_ICONS[id]
+            : (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="12,3 21,20 3,20"/>
+              </svg>
+            );
           return (
-            <div
+            <button
               key={String(id)}
-              className={"ep-strip-dot" + (activeId === id ? " active" : "")}
-              style={{ background: info.color }}
+              className={"ep-icon-btn" + (activeId === id ? " active" : "")}
               title={info.label}
-              onClick={() => { setCollapsed(false); pickLayer(id); }}
-            />
+              onClick={() => pickLayer(id)}
+            >
+              {icon}
+            </button>
           );
         })}
-        {activeId !== null && (
-          <>
-            <div className="ep-strip-sep" />
-            {getTools(getGeomType(activeId, config)).map((t) => (
-              <span key={t.key} className="ep-strip-tool" title={t.label}>{t.icon}</span>
-            ))}
-          </>
-        )}
       </div>
     );
   }
 
   return (
     <div className="ep">
-      <button className="ep-strip-toggle ep-strip-toggle-close" title="Minimer panel" onClick={() => setCollapsed(true)}>‹</button>
-      <p className="ep-section-label">Kartlag</p>
-
-      <div className="ep-layers">
-        {visibleLayerIds.map((id) => {
-          const info    = getLayerInfo(id, config);
-          const visible = visibility[id] !== false;
-          return (
-            <div key={String(id)} className="ep-layer-row">
-              <button
-                className={"ep-layer-btn" + (activeId === id ? " active" : "") + (visible ? "" : " hidden-layer")}
-                onClick={() => pickLayer(id)}
-                style={{ "--layer-color": info.color }}
-              >
-                {info.label}
-              </button>
-              <button
-                className={"ep-vis-dot" + (visible ? "" : " off")}
-                style={{ background: info.color }}
-                title={visible ? "Skjul lag" : "Vis lag"}
-                onClick={() => toggleVisibility(id)}
-              />
-            </div>
-          );
-        })}
+      <div className="ep-theme-header">
+        <div className="ep-theme-dot" style={{ background: meta?.color ?? "#8ab870" }} />
+        <span className="ep-theme-name">{meta?.label ?? "Tegning"}</span>
+        <button className="ep-close-btn" title="Lukk" onClick={() => setCollapsed(true)}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
       </div>
 
-      <div className="ep-divider" />
       <p className="ep-section-label">Tegning</p>
-
-      {activeId === null && (
-        <p className="ep-hint-sub" style={{ padding: "0.3rem 0" }}>
-          Velg et lag over for å tegne. Klikk et objekt og velg "Rediger objekt" for å redigere.
-        </p>
-      )}
 
       {activeId !== null && (
         <div className="ep-body">
@@ -710,9 +737,6 @@ export default function EditPanel({ view, layersById, config, editRequest, onEdi
           {/* ── Edit existing ── */}
           {phase === "edit" && (
             <div>
-              <div className="ep-edit-badge">
-                Redigerer: <strong><LayerIcon icon={meta.icon} className="ep-layer-icon" /> {meta.label}</strong>
-              </div>
               <button className="ep-geom-btn" onClick={startGeomEdit}>
                 ✏ Rediger geometri
               </button>
