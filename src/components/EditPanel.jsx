@@ -85,6 +85,110 @@ const CUSTOM_COLORS = {
   esriGeometryPoint:    "#B06090",
 };
 
+function hexToRgb(hex) {
+  return [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+}
+
+const TYPE_COLORS = {
+  0: { PARK:"#8ac854", NATUR:"#5e9e44", LEIK:"#c8d840", IDRETT:"#50b848", KIRKEG:"#708050", KOLON:"#a0c040", SKOLE:"#78b838", HUNDE:"#90b840", BUFFER:"#88a870", ANNET:"#b2dc8a" },
+  1: { PLEN:"#90c858", ENG:"#98c060",   BLOM:"#a8c040", BUSK:"#507838",   HEKK:"#3e6830",   TREG:"#588040",  SKOG:"#2e5820",  BAMB:"#609030",  KLATR:"#509030", ANNET:"#5e9e44" },
+  3: { GANG:"#d8c090", SYKK:"#c09050",  GS:"#c8b070",   TUR:"#b89058",    NAT:"#a87840",     KJORE:"#909090", ANNET:"#c8a878" },
+  4: { PLASS:"#d8d0c8", PARK:"#9898a8", TERR:"#c8c0b0", SKATE:"#8898b8",  BALL:"#a8b890",    SCEN:"#c0b090",  ANNET:"#d0cbbb" },
+  5: { DAM:"#6098c8",  BASS:"#7ab8e0",  FONT:"#a0d0f0",  BEKK:"#5888b8",  REGNB:"#7898b8",   ANNET:"#96c8e0" },
+  6: { BENK:"#c07830", BORD:"#a06028",  SOPP:"#707080",  BEL:"#d8b020",   SYKK:"#7080a0",    FLAGG:"#c03828", SKILT:"#b09050", DRIKK:"#50a0c0", GRILL:"#806040", STEIN:"#9090a0", LEIK:"#e09838", ANNET:"#c87832" },
+  7: { MUR:"#a09060",  GJERDE:"#909880", PERG:"#c0b080", PAVI:"#d0c090",  LESKUR:"#b0a068",  TRAPP:"#a09068", BRO:"#8098a0",   PLATT:"#c8a870", ANNET:"#bcab82" },
+};
+
+function getTypeColor(layerId, code) {
+  return TYPE_COLORS[layerId]?.[code] ?? LAYER_META[layerId]?.color ?? "#8ab870";
+}
+
+const _ico = (children) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    {children}
+  </svg>
+);
+
+const DOTS_ICON = _ico(<><circle cx="6" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/></>);
+
+const TYPE_ICONS = {
+  0: {
+    PARK:   _ico(<><circle cx="12" cy="9" r="5"/><line x1="12" y1="14" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/></>),
+    NATUR:  _ico(<><path d="M2 20L8 9l4 6 3-4 7 9H2z"/></>),
+    LEIK:   _ico(<><line x1="5" y1="3" x2="5" y2="13"/><line x1="19" y1="3" x2="19" y2="13"/><line x1="5" y1="3" x2="19" y2="3"/><path d="M12 8l-1.5 7h3L12 8z"/></>),
+    IDRETT: _ico(<><circle cx="12" cy="12" r="9"/><path d="M12 3c-2 4-2 14 0 18M12 3c2 4 2 14 0 18M3 12c4-2 14-2 18 0"/></>),
+    KIRKEG: _ico(<><line x1="12" y1="3" x2="12" y2="21"/><line x1="5" y1="8" x2="19" y2="8"/><path d="M8 21h8"/></>),
+    KOLON:  _ico(<><rect x="3" y="13" width="18" height="7" rx="1"/><path d="M8 13V9M12 13V7M16 13V9"/><path d="M6 9c0-2 2-3 6-3s6 1 6 3"/></>),
+    SKOLE:  _ico(<><rect x="3" y="9" width="18" height="12" rx="1"/><path d="M9 9V6h6v3"/><line x1="12" y1="4" x2="12" y2="6"/><line x1="10" y1="15" x2="14" y2="15"/><line x1="12" y1="13" x2="12" y2="17"/></>),
+    HUNDE:  _ico(<><circle cx="12" cy="15" r="4"/><circle cx="7" cy="9" r="2.5"/><circle cx="12" cy="7" r="2.5"/><circle cx="17" cy="9" r="2.5"/></>),
+    BUFFER: _ico(<><path d="M12 3l8 4v5c0 4.5-3.5 8-8 9-4.5-1-8-4.5-8-9V7l8-4z"/></>),
+    ANNET:  DOTS_ICON,
+  },
+  1: {
+    PLEN:   _ico(<><line x1="3" y1="20" x2="21" y2="20"/><path d="M6 20v-5M9 20v-7M12 20v-6M15 20v-7M18 20v-5"/></>),
+    ENG:    _ico(<><line x1="3" y1="18" x2="21" y2="18"/><path d="M7 18v-5c0-3 3-5 3-5M10 18v-3"/><path d="M17 18v-5c0-3-3-5-3-5M14 18v-3"/><circle cx="7" cy="9" r="1.5"/><circle cx="17" cy="9" r="1.5"/></>),
+    BLOM:   _ico(<><circle cx="12" cy="12" r="3"/><path d="M12 5v2M12 17v2M5 12H7M17 12h2M7.1 7.1l1.4 1.4M15.5 15.5l1.4 1.4M7.1 16.9l1.4-1.4M15.5 8.5l1.4-1.4"/></>),
+    BUSK:   _ico(<><path d="M4 19c0-4 2.5-7 6-8a4 4 0 008 0c3.5 1 6 4 6 8H4z"/></>),
+    HEKK:   _ico(<><rect x="3" y="13" width="18" height="7" rx="1"/><path d="M3 13c2.5-3.5 5-3.5 7.5 0s5 0 7.5 0"/></>),
+    TREG:   _ico(<><circle cx="8" cy="12" r="5"/><circle cx="16" cy="10" r="5"/><circle cx="12" cy="16" r="4"/></>),
+    SKOG:   _ico(<><path d="M5 20l4-11 4 11z"/><path d="M13 20l4-12 4 12z"/><line x1="9" y1="20" x2="13" y2="20"/></>),
+    BAMB:   _ico(<><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="5" x2="15" y2="21"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="9" y1="14" x2="15" y2="14"/><path d="M9 3c1-1 2-1 3 0"/><path d="M15 5c-1-1-2-1-3 0"/></>),
+    KLATR:  _ico(<><path d="M8 20c0-5 2-8 4-10 2-2 4-5 4-9"/><path d="M12 10c-2 0-4-1-4-3"/><path d="M12 15c2 0 4-1 4-3"/></>),
+    ANNET:  DOTS_ICON,
+  },
+  3: {
+    GANG:   _ico(<><circle cx="12" cy="4" r="2.5"/><path d="M12 6.5v5.5l-3 6M12 12l3 6M9.5 10h5"/></>),
+    SYKK:   _ico(<><circle cx="6" cy="15" r="4"/><circle cx="18" cy="15" r="4"/><path d="M6 15l6-8 6 8M12 7h4"/></>),
+    GS:     _ico(<><circle cx="5" cy="5" r="2"/><path d="M5 7v5l-2 4M5 11l2 4"/><circle cx="18" cy="15" r="3.5"/><circle cx="11" cy="15" r="3.5"/><path d="M14.5 15l-2-5h3"/></>),
+    TUR:    _ico(<><circle cx="12" cy="4" r="2.5"/><path d="M12 6.5v5.5M9 10l-2 10M15 10l2 10M7 8l-3 8"/></>),
+    NAT:    _ico(<><path d="M9 7c-1 2 0 5 3 5s4-3 3-5c-1-2-6-1-6 0z"/><path d="M15 18l-3-6M9 18l3-6M9 18h6"/></>),
+    KJORE:  _ico(<><rect x="2" y="10" width="20" height="9" rx="2"/><path d="M7 10V8a2 2 0 012-2h6a2 2 0 012 2v2"/><circle cx="7" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/></>),
+    ANNET:  DOTS_ICON,
+  },
+  4: {
+    PLASS:  _ico(<><rect x="3" y="3" width="18" height="18" rx="1"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="17" x2="21" y2="17"/><line x1="10" y1="3" x2="10" y2="21"/><line x1="17" y1="3" x2="17" y2="21"/></>),
+    PARK:   _ico(<><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M10 7h4a3 3 0 010 6h-4V7z"/></>),
+    TERR:   _ico(<><path d="M4 20h4v-5h4v-5h4v-5h4"/></>),
+    SKATE:  _ico(<><rect x="3" y="12" width="18" height="4" rx="2"/><circle cx="8" cy="17" r="2"/><circle cx="16" cy="17" r="2"/><path d="M10 12l5-7"/></>),
+    BALL:   _ico(<><circle cx="12" cy="12" r="9"/><path d="M12 3c-2 4-2 14 0 18M12 3c2 4 2 14 0 18M3 12c4-2 14-2 18 0"/></>),
+    SCEN:   _ico(<><rect x="3" y="13" width="18" height="7" rx="1"/><path d="M8 13V9h8v4"/><path d="M6 9c0-2 6-4 6-4s6 2 6 4"/></>),
+    ANNET:  DOTS_ICON,
+  },
+  5: {
+    DAM:    _ico(<><path d="M5 16c0-4.5 3-9 7-9s7 4.5 7 9c0 2-3 3-7 3s-7-1-7-3z"/><path d="M8 14c1 1.5 6 1.5 7 0"/></>),
+    BASS:   _ico(<><rect x="3" y="7" width="18" height="10" rx="2"/><path d="M3 13c3-2 6 0 9 0s6-2 9 0"/></>),
+    FONT:   _ico(<><line x1="12" y1="20" x2="12" y2="11"/><path d="M12 11c-2-3-5-4-7-3"/><path d="M12 11c2-3 5-4 7-3"/><path d="M8 8c-1-2-3-2-3 0"/><path d="M16 8c1-2 3-2 3 0"/><line x1="9" y1="20" x2="15" y2="20"/></>),
+    BEKK:   _ico(<><path d="M3 12c2-3 4 0 6 0s4-3 6 0 4 3 6 0"/><path d="M3 16c2-3 4 0 6 0s4-3 6 0 4 3 6 0"/></>),
+    REGNB:  _ico(<><path d="M12 3c-3.5 5-6 8-6 12a6 6 0 0012 0c0-4-2.5-7-6-12z"/></>),
+    ANNET:  DOTS_ICON,
+  },
+  6: {
+    BENK:   _ico(<><rect x="3" y="10" width="18" height="2.5" rx="1.25"/><path d="M7 12.5v5M17 12.5v5"/><path d="M5 17.5h14"/></>),
+    BORD:   _ico(<><ellipse cx="12" cy="10" rx="9" ry="4"/><line x1="12" y1="14" x2="12" y2="20"/><line x1="8" y1="20" x2="16" y2="20"/></>),
+    SOPP:   _ico(<><path d="M4 12c0-4 3.6-8 8-8s8 4 8 8H4z"/><line x1="12" y1="12" x2="12" y2="20"/><line x1="9" y1="20" x2="15" y2="20"/></>),
+    BEL:    _ico(<><line x1="12" y1="9" x2="12" y2="20"/><path d="M9 12c0-3 6-3 6 0H9z"/><circle cx="12" cy="6" r="2.5"/><line x1="9" y1="20" x2="15" y2="20"/></>),
+    SYKK:   _ico(<><line x1="7" y1="7" x2="7" y2="17"/><line x1="17" y1="7" x2="17" y2="17"/><line x1="7" y1="12" x2="17" y2="12"/><path d="M5 7a2 2 0 014 0"/><path d="M15 7a2 2 0 014 0"/></>),
+    FLAGG:  _ico(<><line x1="6" y1="3" x2="6" y2="21"/><path d="M6 3l13 5-13 5"/></>),
+    SKILT:  _ico(<><rect x="8" y="4" width="12" height="8" rx="1"/><path d="M8 8H5l3-4"/><line x1="14" y1="12" x2="14" y2="20"/></>),
+    DRIKK:  _ico(<><path d="M8 6h8v7a4 4 0 01-8 0V6z"/><path d="M16 9h3v3a3 3 0 01-3 0"/><line x1="12" y1="19" x2="12" y2="21"/><line x1="9" y1="21" x2="15" y2="21"/></>),
+    GRILL:  _ico(<><ellipse cx="12" cy="10" rx="8" ry="3.5"/><path d="M4 10l-1.5 8M20 10l1.5 8M8 13l-1 7M16 13l1 7M7 20h10"/></>),
+    STEIN:  _ico(<><path d="M5 18c0-3.5 3-8 7-8s7 4.5 7 8H5z"/><path d="M8 14c1-1.5 5-1.5 7 0"/></>),
+    LEIK:   _ico(<><rect x="5" y="4" width="5" height="10" rx="1"/><path d="M10 14l7 6"/><line x1="4" y1="4" x2="11" y2="4"/><circle cx="7.5" cy="2.5" r="1.5"/></>),
+    ANNET:  DOTS_ICON,
+  },
+  7: {
+    MUR:    _ico(<><rect x="3" y="5" width="18" height="14" rx="1"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="5" x2="9" y2="10"/><line x1="15" y1="5" x2="15" y2="10"/><line x1="6" y1="10" x2="6" y2="15"/><line x1="18" y1="10" x2="18" y2="15"/><line x1="9" y1="15" x2="9" y2="19"/><line x1="15" y1="15" x2="15" y2="19"/></>),
+    GJERDE: _ico(<><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="6" y1="7" x2="6" y2="18"/><line x1="12" y1="7" x2="12" y2="18"/><line x1="18" y1="7" x2="18" y2="18"/><path d="M5 7l1 3M11 7l1 3M17 7l1 3"/></>),
+    PERG:   _ico(<><line x1="3" y1="9" x2="21" y2="9"/><path d="M6 5v4M10 5v4M14 5v4M18 5v4"/><rect x="3" y="9" width="18" height="11" rx="1" strokeDasharray="3 2"/></>),
+    PAVI:   _ico(<><path d="M3 10l9-7 9 7"/><rect x="5" y="10" width="14" height="10" rx="1"/><line x1="9" y1="20" x2="9" y2="10"/><line x1="15" y1="20" x2="15" y2="10"/></>),
+    LESKUR: _ico(<><rect x="3" y="8" width="18" height="2" rx="1"/><line x1="4" y1="10" x2="4" y2="18"/><line x1="20" y1="10" x2="20" y2="18"/><line x1="4" y1="18" x2="20" y2="18"/><line x1="12" y1="10" x2="12" y2="18"/></>),
+    TRAPP:  _ico(<><path d="M4 20h4v-5h4v-5h4v-5h4"/></>),
+    BRO:    _ico(<><line x1="3" y1="16" x2="21" y2="16"/><path d="M6 16c0-4 2-7 6-7s6 3 6 7"/><line x1="6" y1="16" x2="6" y2="9"/><line x1="18" y1="16" x2="18" y2="9"/><line x1="3" y1="9" x2="21" y2="9"/></>),
+    PLATT:  _ico(<><rect x="3" y="8" width="18" height="12" rx="1"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="16" x2="21" y2="16"/><line x1="8" y1="8" x2="8" y2="20"/><line x1="16" y1="8" x2="16" y2="20"/></>),
+    ANNET:  DOTS_ICON,
+  },
+};
+
 const GEOM_TOOL = {
   esriGeometryPolygon:  "polygon",
   esriGeometryPolyline: "polyline",
@@ -100,13 +204,6 @@ const CUSTOM_STATUS_DOMAIN = {
     { code: "FJER",  name: "Skal fjernes"     },
   ],
 };
-
-const BASEMAPS = [
-  { id: "topo-vector",    label: "Topo"    },
-  { id: "hybrid",         label: "Flyfoto" },
-  { id: "streets-vector", label: "Kart"    },
-  { id: "gray-vector",    label: "Grå"     },
-];
 
 // ── Draw tool definitions per geometry type ───────────────────────────────────
 
@@ -146,18 +243,26 @@ function getAttrFields(layerId) {
 
 // ── TypePicker — card grid for type selection ─────────────────────────────────
 
-function TypePicker({ opts, value, onChange }) {
+function TypePicker({ opts, value, onChange, layerId }) {
   return (
     <div className="ep-type-grid">
-      {opts.map((o) => (
-        <button
-          key={o.code}
-          className={"ep-type-card" + (value === o.code ? " selected" : "")}
-          onClick={() => onChange(o.code)}
-        >
-          {o.name}
-        </button>
-      ))}
+      {opts.map((o) => {
+        const color = getTypeColor(layerId, o.code);
+        const icon  = TYPE_ICONS[layerId]?.[o.code] ?? DOTS_ICON;
+        return (
+          <button
+            key={o.code}
+            className={"ep-type-card" + (value === o.code ? " selected" : "")}
+            onClick={() => onChange(o.code)}
+          >
+            <span className="ep-type-flik" style={{ background: color }} />
+            <span className="ep-type-card-body">
+              {icon}
+              <span className="ep-type-card-label">{o.name}</span>
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -362,7 +467,6 @@ export default function EditPanel({ view, layersById, config, editRequest, onEdi
   const [visibility,     setVisibility]     = useState(() =>
     Object.fromEntries(LAYER_DEFINITIONS.map((d) => [d.id, true]))
   );
-  const [basemap,      setBasemap]      = useState("topo-vector");
   const [liveMeasure,  setLiveMeasure]  = useState(null);
   const [activeTool,   setActiveTool]   = useState(null); // tool key from DRAW_TOOLS
   const [collapsed,    setCollapsed]    = useState(true);
@@ -512,6 +616,22 @@ export default function EditPanel({ view, layersById, config, editRequest, onEdi
         featureSources: Object.values(layersById).map((l) => ({ layer: l, enabled: true })),
       },
     });
+
+    // Apply type-based symbol color
+    const typeField = isCustomLayerId(activeId) ? null : (LAYER_META[activeId]?.typeField ?? null);
+    const typeCode  = typeField ? attrs[typeField] : null;
+    const hex = isCustomLayerId(activeId)
+      ? (CUSTOM_COLORS[geomType] ?? "#8ab870")
+      : getTypeColor(activeId, typeCode);
+    const [r, g, b] = hexToRgb(hex);
+    if (geomType === "esriGeometryPolygon") {
+      sk.polygonSymbol = { type: "simple-fill", color: [r, g, b, 140], outline: { type: "simple-line", color: [r, g, b, 220], width: 1.8 } };
+    } else if (geomType === "esriGeometryPolyline") {
+      sk.polylineSymbol = { type: "simple-line", color: [r, g, b, 230], width: 2.5 };
+    } else if (geomType === "esriGeometryPoint") {
+      sk.pointSymbol = { type: "simple-marker", color: [r, g, b, 200], outline: { type: "simple-line", color: [r, g, b, 255], width: 1.5 }, size: 10 };
+    }
+
     sketchRef.current = sk;
     setActiveTool(toolKey);
     setPhase("drawing"); setLiveMeasure(null);
@@ -643,7 +763,6 @@ export default function EditPanel({ view, layersById, config, editRequest, onEdi
     setVisibility((v) => ({ ...v, [id]: next }));
   }
 
-  function switchBasemap(id) { view.map.basemap = id; setBasemap(id); }
 
   // ── Derived ─────────────────────────────────────────────────────────────────
   const meta           = activeId !== null ? getLayerInfo(activeId, config) : null;
@@ -714,6 +833,7 @@ export default function EditPanel({ view, layersById, config, editRequest, onEdi
               <p className="ep-step-label">Velg type</p>
               <TypePicker
                 opts={typeOpts}
+                layerId={activeId}
                 value={attrs[meta.typeField] ?? ""}
                 onChange={(code) => { setAttr(meta.typeField, code); setPhase("attrs"); }}
               />
@@ -827,6 +947,7 @@ export default function EditPanel({ view, layersById, config, editRequest, onEdi
                   <p className="ep-step-label">Type</p>
                   <TypePicker
                     opts={typeOpts}
+                    layerId={activeId}
                     value={attrs[meta.typeField] ?? ""}
                     onChange={(code) => setAttr(meta.typeField, code)}
                   />
@@ -886,19 +1007,6 @@ export default function EditPanel({ view, layersById, config, editRequest, onEdi
         </div>
       )}
 
-      <div className="ep-divider" />
-      <p className="ep-section-label">Bakgrunnskart</p>
-      <div className="ep-basemaps">
-        {BASEMAPS.map((b) => (
-          <button
-            key={b.id}
-            className={"ep-basemap-btn" + (basemap === b.id ? " active" : "")}
-            onClick={() => switchBasemap(b.id)}
-          >
-            {b.label}
-          </button>
-        ))}
-      </div>
     </div>
   );
 }

@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import Map from "@arcgis/core/Map.js";
 import MapView from "@arcgis/core/views/MapView.js";
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer.js";
+import VectorTileLayer from "@arcgis/core/layers/VectorTileLayer.js";
+import TileLayer from "@arcgis/core/layers/TileLayer.js";
+import Basemap from "@arcgis/core/Basemap.js";
 import { on } from "@arcgis/core/core/reactiveUtils.js";
 import { ensureLarkService, provisionCustomLayers } from "../services/featureLayerSetup.js";
 import { saveConfig, isCustomLayerId } from "../services/appConfig.js";
@@ -20,6 +23,20 @@ const LeafSVG = (
     <path d="M12 8 Q16 10 17 13" stroke="rgba(200,240,174,0.2)" strokeWidth="0.7" fill="none"/>
   </svg>
 );
+
+const BASEMAP_OPTIONS = [
+  { id: "kanvas",   label: "Kanvas",      type: "vector", url: "https://vector.services.geodataonline.no/arcgis/rest/services/GeocacheVector/GeocacheKanvas/VectorTileServer" },
+  { id: "mork",     label: "Mørk Kanvas", type: "vector", url: "https://vector.services.geodataonline.no/arcgis/rest/services/GeocacheVector/GeocacheKanvasMork/VectorTileServer" },
+  { id: "graatone", label: "Gråtone",     type: "vector", url: "https://vector.services.geodataonline.no/arcgis/rest/services/GeocacheVector/GeocacheNordenGraatoneTerreng/VectorTileServer" },
+  { id: "bilder",   label: "Bilder",      type: "tile",   url: "https://services.geodataonline.no/arcgis/rest/services/Geocache_UTM33_EUREF89/GeocacheBilder/MapServer" },
+];
+
+function makeBasemap(opt) {
+  const layer = opt.type === "vector"
+    ? new VectorTileLayer({ url: opt.url })
+    : new TileLayer({ url: opt.url });
+  return new Basemap({ baseLayers: [layer] });
+}
 
 // Draw order: polygons first (bottom), then lines, then points (top)
 const LAYER_ORDER = [0, 4, 5, 7, 1, 3, 2, 6];
@@ -94,13 +111,15 @@ const CUSTOM_RENDERERS = {
 
 export default function MapViewComponent({ config, onSignOut, onOpenConfig, onConfigUpdate }) {
   const mapRef = useRef(null);
-  const [status,      setStatus]      = useState("Initialiserer…");
-  const [loading,     setLoading]     = useState(true);
-  const [error,       setError]       = useState(null);
-  const [user,        setUser]        = useState(null);
-  const [mapView,     setMapView]     = useState(null);
-  const [layersById,  setLayersById]  = useState(null);
-  const [editRequest, setEditRequest] = useState(null);
+  const [status,          setStatus]          = useState("Initialiserer…");
+  const [loading,         setLoading]         = useState(true);
+  const [error,           setError]           = useState(null);
+  const [user,            setUser]            = useState(null);
+  const [mapView,         setMapView]         = useState(null);
+  const [layersById,      setLayersById]      = useState(null);
+  const [editRequest,     setEditRequest]     = useState(null);
+  const [selectedBasemap, setSelectedBasemap] = useState("kanvas");
+  const [basemapOpen,     setBasemapOpen]     = useState(false);
 
   useEffect(() => {
     let view = null;
@@ -162,7 +181,7 @@ export default function MapViewComponent({ config, onSignOut, onOpenConfig, onCo
         );
 
         const map = new Map({
-          basemap: "topo-vector",
+          basemap: makeBasemap(BASEMAP_OPTIONS[0]),
           layers: [...featureLayers, ...customFeatureLayers],
         });
 
@@ -239,6 +258,12 @@ export default function MapViewComponent({ config, onSignOut, onOpenConfig, onCo
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    if (!mapView) return;
+    const opt = BASEMAP_OPTIONS.find((o) => o.id === selectedBasemap);
+    if (opt) mapView.map.basemap = makeBasemap(opt);
+  }, [selectedBasemap, mapView]);
+
   const handleSignOut = () => { signOut(); onSignOut(); };
 
   return (
@@ -268,6 +293,36 @@ export default function MapViewComponent({ config, onSignOut, onOpenConfig, onCo
         <div className="zoom-controls">
           <button className="zoom-btn" title="Zoom inn" onClick={() => mapView.zoom++}>+</button>
           <button className="zoom-btn" title="Zoom ut" onClick={() => mapView.zoom--}>−</button>
+        </div>
+      )}
+
+      {/* Bakgrunnskart-velger */}
+      {mapView && (
+        <div className="basemap-picker">
+          <button
+            className={`basemap-toggle${basemapOpen ? " open" : ""}`}
+            title="Velg bakgrunnskart"
+            onClick={() => setBasemapOpen((o) => !o)}
+          >
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round">
+              <path d="M1 4.5L8 2l7 2.5-7 2.5L1 4.5Z"/>
+              <path d="M1 8.5l7 2.5 7-2.5"/>
+              <path d="M1 12l7 2.5 7-2.5"/>
+            </svg>
+          </button>
+          {basemapOpen && (
+            <div className="basemap-menu">
+              {BASEMAP_OPTIONS.map((opt) => (
+                <button
+                  key={opt.id}
+                  className={`basemap-opt${selectedBasemap === opt.id ? " active" : ""}`}
+                  onClick={() => { setSelectedBasemap(opt.id); setBasemapOpen(false); }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
